@@ -1,0 +1,202 @@
+{
+    "intercept": 0.32,
+    "home_effect": 0.22,
+    "teams": {
+        "Arsenal": {
+            "attack": 0.64,
+            "defense": 0.66,
+            "corners_att": 5.98,
+            "corners_def": 3.69,
+            "cards_recv": 1.62
+        },
+        "Aston Villa": {
+            "attack": 0.1,
+            "defense": 0.13,
+            "corners_att": 5.44,
+            "corners_def": 5.04,
+            "cards_recv": 2.06
+        },
+        "Bournemouth": {
+            "attack": -0.1,
+            "defense": -0.14,
+            "corners_att": 5.4,
+            "corners_def": 5.74,
+            "cards_recv": 2.3
+        },
+        "Brentford": {
+            "attack": 0.06,
+            "defense": -0.01,
+            "corners_att": 4.55,
+            "corners_def": 5.86,
+            "cards_recv": 1.84
+        },
+        "Brighton": {
+            "attack": -0.01,
+            "defense": 0.12,
+            "corners_att": 5.41,
+            "corners_def": 4.6,
+            "cards_recv": 1.97
+        },
+        "Burnley": {
+            "attack": -0.66,
+            "defense": -0.38,
+            "corners_att": 4.44,
+            "corners_def": 6.28,
+            "cards_recv": 1.8
+        },
+        "Chelsea": {
+            "attack": 0.26,
+            "defense": 0.33,
+            "corners_att": 5.91,
+            "corners_def": 4.34,
+            "cards_recv": 2.27
+        },
+        "Crystal Palace": {
+            "attack": -0.3,
+            "defense": 0.05,
+            "corners_att": 4.49,
+            "corners_def": 5.28,
+            "cards_recv": 1.95
+        },
+        "Everton": {
+            "attack": -0.47,
+            "defense": 0.08,
+            "corners_att": 4.42,
+            "corners_def": 5.91,
+            "cards_recv": 2.11
+        },
+        "Fulham": {
+            "attack": -0.26,
+            "defense": 0.01,
+            "corners_att": 5.02,
+            "corners_def": 5.09,
+            "cards_recv": 2.11
+        },
+        "Ipswich": {
+            "attack": -0.66,
+            "defense": -1.02,
+            "corners_att": 3.82,
+            "corners_def": 6.63,
+            "cards_recv": 2.47
+        },
+        "Leeds": {
+            "attack": -0.16,
+            "defense": -0.42,
+            "corners_att": 5.07,
+            "corners_def": 5.06,
+            "cards_recv": 2.12
+        },
+        "Leicester": {
+            "attack": -0.04,
+            "defense": -0.34,
+            "corners_att": 4.44,
+            "corners_def": 5.71,
+            "cards_recv": 1.74
+        },
+        "Liverpool": {
+            "attack": 0.87,
+            "defense": 0.5,
+            "corners_att": 6.81,
+            "corners_def": 3.66,
+            "cards_recv": 1.56
+        },
+        "Luton": {
+            "attack": -0.1,
+            "defense": -1.09,
+            "corners_att": 5.37,
+            "corners_def": 5.95,
+            "cards_recv": 1.87
+        },
+        "Man City": {
+            "attack": 1.15,
+            "defense": 0.75,
+            "corners_att": 6.96,
+            "corners_def": 3.15,
+            "cards_recv": 1.41
+        },
+        "Man United": {
+            "attack": 0.17,
+            "defense": 0.14,
+            "corners_att": 5.26,
+            "corners_def": 5.37,
+            "cards_recv": 2.04
+        },
+        "Newcastle": {
+            "attack": 0.2,
+            "defense": 0.05,
+            "corners_att": 5.41,
+            "corners_def": 5.12,
+            "cards_recv": 1.85
+        },
+        "Norwich": {
+            "attack": -1.16,
+            "defense": -1.09,
+            "corners_att": 4.34,
+            "corners_def": 6.66,
+            "cards_recv": 1.55
+        },
+        "Nott'm Forest": {
+            "attack": -0.24,
+            "defense": -0.09,
+            "corners_att": 4.18,
+            "corners_def": 5.99,
+            "cards_recv": 2.07
+        },
+        "Sheffield United": {
+            "attack": -1.0,
+            "defense": -1.06,
+            "corners_att": 4.12,
+            "corners_def": 6.78,
+            "cards_recv": 2.39
+        },
+        "Southampton": {
+            "attack": -0.62,
+            "defense": -0.68,
+            "corners_att": 4.74,
+            "corners_def": 5.58,
+            "cards_recv": 1.93
+        },
+        "Sunderland": {
+            "attack": -0.48,
+            "defense": 0.26,
+            "corners_att": 3.71,
+            "corners_def": 5.29,
+            "cards_recv": 2.26
+        },
+        "Tottenham": {
+            "attack": 0.39,
+            "defense": -0.01,
+            "corners_att": 5.49,
+            "corners_def": 5.31,
+            "cards_recv": 2.11
+        },
+        "Watford": {
+            "attack": -0.75,
+            "defense": -0.87,
+            "corners_att": 4.26,
+            "corners_def": 6.18,
+            "cards_recv": 1.66
+        },
+        "West Brom": {
+            "attack": -0.7,
+            "defense": -0.79,
+            "corners_att": 3.82,
+            "corners_def": 7.03,
+            "cards_recv": 1.55
+        },
+        "West Ham": {
+            "attack": -0.08,
+            "defense": -0.15,
+            "corners_att": 4.71,
+            "corners_def": 5.47,
+            "cards_recv": 1.71
+        },
+        "Wolves": {
+            "attack": -0.57,
+            "defense": -0.16,
+            "corners_att": 4.39,
+            "corners_def": 5.55,
+            "cards_recv": 2.09
+        }
+    }
+}
