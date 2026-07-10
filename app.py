@@ -3,7 +3,6 @@ import numpy as np
 import scipy.stats as stats
 import xgboost as xgb
 import json
-import pandas as pd
 
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
@@ -12,122 +11,30 @@ st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide",
 
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0d1b15;
-        color: #ffffff;
-    }
-    h1, h2, h3, h4 {
-        color: #ffffff !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    hr {
-        border-top: 1px solid #1f3a30 !important;
-    }
-    /* ENCABEZADO "LA BIBLIA DEL PICK" */
+    .stApp { background-color: #0d1b15; color: #ffffff; }
+    h1, h2, h3, h4 { color: #ffffff !important; font-family: 'Segoe UI', sans-serif; }
+    hr { border-top: 1px solid #1f3a30 !important; }
     .header-box {
-        background-color: #0c3321;
-        border: 2px solid #00ffcc;
-        border-radius: 8px;
-        padding: 20px;
-        text-align: center;
-        margin-bottom: 25px;
+        background-color: #0c3321; border: 2px solid #00ffcc;
+        border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 25px;
     }
-    .header-box h2 {
-        margin: 0;
-        font-size: 28px;
-        font-weight: bold;
-        letter-spacing: 2px;
-        color: #ffffff !important;
-    }
-    .header-box p {
-        margin: 5px 0 0 0;
-        font-size: 13px;
-        font-weight: bold;
-        letter-spacing: 3px;
-        color: #ffdf1b !important;
-    }
-    /* Estilos para las tablas de mercados principales */
-    .main-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 25px;
-    }
-    .main-table th {
-        background-color: #091410;
-        color: #a3b8b0;
-        text-align: left;
-        padding: 10px;
-        font-size: 12px;
-        border-bottom: 2px solid #1f3a30;
-    }
-    .main-table td {
-        padding: 12px 10px;
-        border-bottom: 1px solid #1f3a30;
-        font-size: 14px;
-    }
-    /* Estilo de matriz estocástica */
-    .matrix-table {
-        border-collapse: separate;
-        border-spacing: 3px;
-        width: 100%;
-    }
-    .matrix-cell {
-        text-align: center;
-        padding: 15px 5px;
-        font-size: 13px;
-        font-weight: bold;
-        color: #ffffff;
-        border-radius: 3px;
-    }
-    .matrix-header {
-        text-align: center;
-        color: #a3b8b0;
-        font-size: 12px;
-        padding: 5px;
-    }
-    /* Paneles de mercados adicionales */
-    .market-box {
-        background-color: #13271e;
-        border-radius: 5px;
-        padding: 15px;
-        margin-bottom: 15px;
-        border-left: 4px solid #ffdf1b;
-    }
-    .market-title {
-        color: #ffdf1b !important;
-        font-size: 13px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-    }
-    .market-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
-        font-size: 14px;
-    }
-    .market-value {
-        color: #00ffcc;
-        font-weight: bold;
-    }
-    /* REPORTE DE EXPORTACIÓN */
-    .report-card {
-        background-color: #091410;
-        border: 2px solid #ffdf1b;
-        padding: 20px;
-        border-radius: 8px;
-        font-family: monospace;
-    }
+    .header-box h2 { margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 2px; }
+    .header-box p { margin: 5px 0 0 0; font-size: 13px; font-weight: bold; letter-spacing: 3px; color: #ffdf1b !important; }
+    .main-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+    .main-table th { background-color: #091410; color: #a3b8b0; text-align: left; padding: 10px; font-size: 12px; border-bottom: 2px solid #1f3a30; }
+    .main-table td { padding: 12px 10px; border-bottom: 1px solid #1f3a30; font-size: 14px; }
+    .matrix-table { border-collapse: separate; border-spacing: 3px; width: 100%; }
+    .matrix-cell { text-align: center; padding: 15px 5px; font-size: 13px; font-weight: bold; color: #ffffff; border-radius: 3px; }
+    .matrix-header { text-align: center; color: #a3b8b0; font-size: 12px; padding: 5px; }
+    .market-box { background-color: #13271e; border-radius: 5px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #ffdf1b; }
+    .market-title { color: #ffdf1b !important; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+    .market-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+    .market-value { color: #00ffcc; font-weight: bold; }
+    .report-card { background-color: #091410; border: 2px solid #ffdf1b; padding: 20px; border-radius: 8px; font-family: monospace; }
     </style>
 """, unsafe_allow_html=True)
 
-# 🏟️ ENCABEZADO
-st.markdown("""
-    <div class="header-box">
-        <h2>📊 LA BIBLIA DEL PICK</h2>
-        <p>⚡ ANALISIS DEPORTIVO</p>
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="header-box"><h2>📊 LA BIBLIA DEL PICK</h2><p>⚡ ANALISIS DEPORTIVO</p></div>', unsafe_allow_html=True)
 
 # ==============================================================================
 # 💾 NÚCLEO DE DATOS E INYECCIÓN DE LOS 3 ASCENDIDOS CONFIRMADOS
@@ -169,8 +76,13 @@ def cargar_modelo_xgb():
     modelo.load_model("xgboost_goles_model.json")
     return modelo
 
-db = cargar_y_reparar_base_datos()
-modelo_xgb = cargar_modelo_xgb()
+try:
+    db = cargar_y_reparar_base_datos()
+    modelo_xgb = cargar_modelo_xgb()
+except Exception as e:
+    st.error(f"Error al inicializar componentes base: {e}")
+    st.stop()
+
 lista_equipos = sorted(list(db["teams"].keys()))
 
 col_sel1, col_sel2 = st.columns(2)
@@ -197,8 +109,9 @@ for i in range(6):
     for j in range(6):
         matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
-vector = pd.DataFrame([{'home_effect_global': home_effect, 'idx_ataque_local': data_l["attack"], 'idx_defensa_local': data_l["defense"], 'idx_ataque_visita': data_v["attack"], 'idx_defensa_visita': data_v["defense"]}])
-prob_over25_xgb = modelo_xgb.predict_proba(vector)[0][1]
+# Inferencia XGBoost optimizada sin DataFrame complejo
+matriz_pred = np.array([[home_effect, data_l["attack"], data_l["defense"], data_v["attack"], data_v["defense"]]], dtype=np.float32)
+prob_over25_xgb = modelo_xgb.predict_proba(matriz_pred)[0][1]
 
 prob_over25_bayes = 1 - (matrix_bayes[0,0] + matrix_bayes[0,1] + matrix_bayes[0,2] + matrix_bayes[1,0] + matrix_bayes[1,1] + matrix_bayes[2,0])
 factor_ajuste = prob_over25_xgb / max(prob_over25_bayes, 0.01)
@@ -261,9 +174,7 @@ html_table = f"""
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-# Selector de enfoque para matriz dinámica inferior
 enfoque = st.radio("Enfoque Analitico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
-
 matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
 
 # ==============================================================================
@@ -283,7 +194,6 @@ with col_izq:
             color = "#000000" if val > 8.0 else "#ffffff"
             grid_html += f'<td class="matrix-cell" style="background-color: {bg}; color: {color};">{val:.1f}%</td>'
         grid_html += "</tr>"
-        
     grid_html += "<tr><td></td>"
     for j in range(6):
         grid_html += f'<td class="matrix-header">{eq_v[:3].upper()} {j}</td>'
@@ -329,14 +239,13 @@ with col_der:
     st.table(df_top)
 
 # ==============================================================================
-# 📋 REPORTE DE EXPORTACIÓN (ESTABLE PARA COMPARTIR POR TELEGRAM/TEXTO)
+# 📋 REPORTE DE EXPORTACIÓN DIRECTO (TELEGRAM READY)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Reporte de Analisis para Compartir")
 
 datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
 
-# Generar string de texto estructurado libre de errores de memoria
 reporte_texto = f"""📊 LA BIBLIA DEL PICK | ANALISIS DEPORTIVO
 🏟️ MATCH: {eq_l.upper()} vs {eq_v.upper()}
 🎛️ ENFOQUE SELECCIONADO: {enfoque.upper()}
