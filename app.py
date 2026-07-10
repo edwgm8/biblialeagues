@@ -263,7 +263,7 @@ with col_der:
     st.table(df_visual)
 
 # ==============================================================================
-# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (HTML/CSS WORKSTATION)
+# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (HTML/CSS/JS WORKSTATION)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Reporte de Análisis de Producción")
@@ -273,9 +273,18 @@ p_btts_no = 100 - p_btts_si
 p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
 p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
 
-# Estilos inyectados internamente en la estructura para forzar el renderizado en el iframe
+# Estructura máster unificada con script de captura automática
 html_reporte_premium = f"""
-<div style="background-color: #111111; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 35px; border-radius: 10px; max-width: 580px; margin: 0 auto; color: #ffffff; border: 1px solid #222222;">
+<!-- Cargamos la librería html2canvas desde un servidor seguro CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<div style="text-align: center; margin-bottom: 20px;">
+    <button onclick="descargarReporte()" style="background-color: #ffdf1b; color: #0d1b15; border: none; padding: 12px 24px; font-size: 14px; font-weight: bold; border-radius: 5px; cursor: pointer; font-family: 'Segoe UI', sans-serif;">
+        📥 DESCARGAR REPORTE COMO IMAGEN (PNG)
+    </button>
+</div>
+
+<div id="capture-report" style="background-color: #111111; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 35px; border-radius: 10px; max-width: 540px; margin: 0 auto; color: #ffffff; border: 1px solid #222222;">
     <div style="font-size: 26px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px;">LA BIBLIA DEL PICK</div>
     <div style="font-size: 13px; color: #ffdf1b; text-align: center; font-weight: bold; letter-spacing: 2px; margin-bottom: 25px;">⚡ Análisis Deportivo</div>
     
@@ -290,32 +299,32 @@ html_reporte_premium = f"""
     </ul>
     
     <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #ffdf1b;">📊 LÍNEAS DE GOLES Y MERCADOS COMPLEMENTARIOS:</div>
-    <div style="display: flex; justify-content: space-between; gap: 20px;">
+    <div style="display: flex; justify-content: space-between; gap: 15px;">
         <div style="flex: 1; background: #161616; padding: 12px; border-radius: 6px;">
-            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🥅 Ambos Anotan (BTTS)</div>
+            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🥅 Ambos Anotan (BTTS)</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:13px;">• Sí: {p_btts_si:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px;">• No: {p_btts_no:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Sí: {p_btts_si:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• No: {p_btts_no:.1f}%</li>
             </ul>
-            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:13px;">• Over 8.5: {prob_c_85:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ffdf1b;">• Over 9.5: {prob_c_95:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px;">• Over 10.5: {prob_c_105:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 8.5: {prob_c_85:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ffdf1b;">• Over 9.5: {prob_c_95:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 10.5: {prob_c_105:.1f}%</li>
             </ul>
         </div>
         <div style="flex: 1; background: #161616; padding: 12px; border-radius: 6px;">
-            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">⚽ Totales de Goles</div>
+            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">⚽ Totales de Goles</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:13px;">• Over 1.5: {p_over15:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ffdf1b;">• Over 2.5: {p_over25:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px;">• Over 3.5: {p_over35:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 1.5: {p_over15:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ffdf1b;">• Over 2.5: {p_over25:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 3.5: {p_over35:.1f}%</li>
             </ul>
-            <div style="font-size: 13px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:13px;">• Over 2.5: {prob_t_25:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ff4d4d;">• Over 3.5: {prob_t_35:.1f}%</li>
-                <li style="padding: 2px 0; font-size:13px;">• Over 4.5: {prob_t_45:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 2.5: {prob_t_25:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ff4d4d;">• Over 3.5: {prob_t_35:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Over 4.5: {prob_t_45:.1f}%</li>
             </ul>
         </div>
     </div>
@@ -330,9 +339,23 @@ html_reporte_premium = f"""
     
     <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Generado por Bet365 Analytics Lab AI</div>
 </div>
+
+<script>
+function descargarReporte() {{
+    const element = document.getElementById("capture-report");
+    html2canvas(element, {{
+        backgroundColor: "#111111",
+        scale: 2, // Fuerza renderizado en doble resolución (HD ready)
+        logging: false
+    }}).then(canvas => {{
+        const link = document.createElement("a");
+        link.download = "Analisis_{eq_l}_vs_{eq_v}.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }});
+}}
+</script>
 """
 
-# 🟢 RENDERIZADO CORREGIDO MEDIANTE IFRAME DE COMPONENTES DE STREAMLIT
-st.components.v1.html(html_reporte_premium, height=620, scrolling=False)
-
-st.info("💡 **Tip de producción:** Para compartir este reporte instantáneamente en tus canales o grupos con calidad HD y acentos perfectos, solo toma una captura de pantalla (*Screenshot*) directamente a la tarjeta de arriba. ¡Queda impecable y lista para mandar!")
+# Renderizado mediante el componente de vista segura de Streamlit con margen para el botón
+st.components.v1.html(html_reporte_premium, height=680, scrolling=False)
