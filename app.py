@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import io
 
 # ==============================================================================
-# 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
+# 🎨 ESTITO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
 st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
 
@@ -178,7 +178,7 @@ if eq_l == eq_v:
     st.stop()
 
 # ==============================================================================
-# 🧮 CÁLCULO MULTI-MODELO (CORRECCIÓN DE LÓGICA MATRICIAL LOCAL/VISITA)
+# 🧮 CÁLCULO MULTI-MODELO
 # ==============================================================================
 data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
 intercept, home_effect = db["intercept"], db["home_effect"]
@@ -215,16 +215,10 @@ prob_c_95 = (1 - stats.poisson.cdf(9, total_corners)) * 100
 total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
 prob_t_35 = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
 
-# 🌟 CORRECCIÓN CRÍTICA DE EJES: i representa goles del LOCAL (filas), j representa goles del VISITANTE (columnas)
 def procesar_metricas_mercado(matrix, l_local, l_visita):
-    p_l = np.sum(np.triu(matrix, 1)) # i > j (Victoria Local) -> Suma la parte superior sin la diagonal al trasponer correctamente
-    p_e = np.sum(np.diag(matrix))     # i == j (Empate)
-    p_v = np.sum(np.tril(matrix, -1)) # i < j (Victoria Visitante)
-    
-    # Inversión corregida para alineación real con la matriz visual
     p_local_real = np.sum([matrix[i, j] for i in range(6) for j in range(6) if i > j])
+    p_e = np.sum(np.diag(matrix))
     p_visit_real = np.sum([matrix[i, j] for i in range(6) for j in range(6) if j > i])
-    
     return f"{p_local_real*100:.1f}%", f"{p_e*100:.1f}%", f"{p_visit_real*100:.1f}%", f"{l_local:.2f} vs {l_visita:.2f}"
 
 # ==============================================================================
@@ -317,7 +311,6 @@ with col_der:
     """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
-    # 🌟 CORRECCIÓN: RENDERIZADO VISUAL EXPLICITO DE LA TABLA TOP 10 DE MARCADORES EXÁCTOS
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
     top_lista = []
     for i in range(6):
@@ -327,47 +320,45 @@ with col_der:
     df_top.index += 1
     df_top["PROBABILIDAD MKT"] = df_top["PROBABILIDAD MKT"].map("{:.1f}%".format)
     
-    st.table(df_top) # 🟢 Agregado el renderizador faltante
+    st.table(df_top)
 
 # ==============================================================================
-# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO (SIN ACENTOS Y DISEÑO PREMIUM)
+# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO Y BLINDADO (COMPATIBILIDAD PIL)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Exportar Reporte de Analisis")
 
-def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas, top_scores):
+def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas):
+    # Generar lienzo base
     img = Image.new("RGBA", (800, 600), "#0d1b15")
     draw = ImageDraw.Draw(img)
     
-    # Contorno e Interfaz Estilo Bet365
+    # Bordes estéticos
     draw.rectangle([15, 15, 785, 585], outline="#00ffcc", width=3)
     draw.rectangle([30, 30, 770, 110], fill="#0c3321", outline="#ffdf1b", width=1)
     
-    # Textos limpiados de acentos para evitar fallos de renderizado
-    draw.text((400, 50), "LA BIBLIA DEL PICK", fill="#ffffff", font_size=28, anchor="mm")
-    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", font_size=12, anchor="mm")
+    # 🟢 CORRECCIÓN PIL: Textos dibujados sin argumento font_size conflictivo
+    draw.text((400, 50), "LA BIBLIA DEL PICK", fill="#ffffff", anchor="mm")
+    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", anchor="mm")
     
-    # Datos de los rivales
-    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", font_size=26, anchor="mm")
+    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", anchor="mm")
     draw.line([100, 175, 700, 175], fill="#1f3a30", width=2)
     
-    # Distribuir datos en columnas balanceadas limpias
-    # Columna 1 (Izquierda) - Mercados 1X2
-    draw.text((50, 210), f"PROBABILIDADES 1X2 ({enfoque.upper()}):", fill="#ffdf1b", font_size=15)
-    draw.text((70, 245), f"* Gana {local}: {m_1x2[0]}", fill="#ffffff", font_size=14)
-    draw.text((70, 275), f"* Empate (X): {m_1x2[1]}", fill="#ffffff", font_size=14)
-    draw.text((70, 305), f"* Gana {visitante}: {m_1x2[2]}", fill="#ffffff", font_size=14)
+    # Lado Izquierdo: 1X2
+    draw.text((50, 210), f"PROBABILIDADES 1X2 ({enfoque.upper()}):", fill="#ffdf1b")
+    draw.text((70, 245), f"* Gana {local}: {m_1x2[0]}", fill="#ffffff")
+    draw.text((70, 275), f"* Empate (X): {m_1x2[1]}", fill="#ffffff")
+    draw.text((70, 305), f"* Gana {visitante}: {m_1x2[2]}", fill="#ffffff")
     
-    # Columna 1 - Props Inferiores
-    draw.text((50, 360), "MERCADOS ADICIONALES:", fill="#ffdf1b", font_size=15)
-    draw.text((70, 395), f"* Ambos Anotan (Si): {btts:.1f}%", fill="#ffffff", font_size=14)
-    draw.text((70, 425), f"* Total Goles (Mas de 2.5): {over25:.1f}%", fill="#ffffff", font_size=14)
-    draw.text((70, 455), f"* Corners (Mas de 9.5): {corners:.1f}%", fill="#00ffcc", font_size=14)
-    draw.text((70, 485), f"* Tarjetas (Mas de 3.5): {tarjetas:.1f}%", fill="#ff4d4d", font_size=14)
+    # Props
+    draw.text((50, 360), "MERCADOS ADICIONALES:", fill="#ffdf1b")
+    draw.text((70, 395), f"* Ambos Anotan (Si): {btts:.1f}%", fill="#ffffff")
+    draw.text((70, 425), f"* Total Goles (Mas de 2.5): {over25:.1f}%", fill="#ffffff")
+    draw.text((70, 455), f"* Corners (Mas de 9.5): {corners:.1f}%", fill="#00ffcc")
+    draw.text((70, 485), f"* Tarjetas (Mas de 3.5): {tarjetas:.1f}%", fill="#ff4d4d")
     
-    # Columna 2 (Derecha) - Marcadores mas probables
-    draw.text((460, 210), "TOP MARCADORES EXACTOS:", fill="#ffdf1b", font_size=15)
-    # Re-extraer para la imagen los 5 punteros
+    # Lado Derecho: Marcadores punteros calculados dinámicamente
+    draw.text((460, 210), "TOP MARCADORES EXACTOS:", fill="#ffdf1b")
     lista_img = []
     for i in range(6):
         for j in range(6):
@@ -376,16 +367,16 @@ def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas
     
     for idx, row in df_img.iterrows():
         y_pos = 245 + (idx * 32)
-        draw.text((480, y_pos), f"{idx+1}. Resultado [{row['M']}]: {row['P']:.1f}%", fill="#ffffff", font_size=14)
+        draw.text((480, y_pos), f"{idx+1}. Resultado [{row['M']}]: {row['P']:.1f}%", fill="#ffffff")
         
-    draw.text((400, 555), "Generado de forma automatica por Bet365 Analytics Lab AI", fill="#a3b8b0", font_size=11, anchor="mm")
+    draw.text((400, 555), "Generado de forma automatica por Bet365 Analytics Lab AI", fill="#a3b8b0", anchor="mm")
     
     byte_io = io.BytesIO()
     img.save(byte_io, 'PNG')
     return byte_io.getvalue()
 
 datos_1x2 = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
-imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35, matrix_activa)
+imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35)
 
 st.download_button(
     label="📥 Descargar Analisis en Formato PNG",
