@@ -6,60 +6,98 @@ import json
 import pandas as pd
 
 # ==============================================================================
-# 🎨 CONFIGURACIÓN E INYECCIÓN DE DISEÑO PREMIUM (ESTILO BET365)
+# 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="🚨 Bet365 Style - AI Predictor", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Tablero Máster de Probabilidades", layout="wide", page_icon="📊")
 
-# CSS personalizado para emular la paleta de colores de Bet365
 st.markdown("""
     <style>
-    /* Fondo general de la app */
     .stApp {
         background-color: #0d1b15;
         color: #ffffff;
     }
-    /* Estilo de los contenedores de métricas */
-    div[data-testid="stMetricValue"] {
-        color: #ffdf1b !important; /* Amarillo Bet365 */
-        font-weight: bold;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #a3b8b0 !important; /* Gris verdoso suave */
-    }
-    /* Encabezados y títulos */
     h1, h2, h3, h4 {
         color: #ffffff !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    /* Líneas divisorias */
     hr {
         border-top: 1px solid #1f3a30 !important;
     }
-    /* Tablas estilo dark */
-    .stTable table {
-        background-color: #13271e !important;
-        color: #ffffff !important;
-        border: 1px solid #1f3a30 !important;
+    /* Estilos para las tablas de mercados principales */
+    .main-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
     }
-    th {
-        background-color: #0f3524 !important;
+    .main-table th {
+        background-color: #091410;
+        color: #a3b8b0;
+        text-align: left;
+        padding: 10px;
+        font-size: 12px;
+        border-bottom: 2px solid #1f3a30;
+    }
+    .main-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #1f3a30;
+        font-size: 14px;
+    }
+    /* Estilo de matriz estocástica */
+    .matrix-table {
+        border-collapse: separate;
+        border-spacing: 3px;
+        width: 100%;
+    }
+    .matrix-cell {
+        text-align: center;
+        padding: 15px 5px;
+        font-size: 13px;
+        font-weight: bold;
+        color: #ffffff;
+        border-radius: 3px;
+    }
+    .matrix-header {
+        text-align: center;
+        color: #a3b8b0;
+        font-size: 12px;
+        padding: 5px;
+    }
+    /* Paneles de mercados adicionales */
+    .market-box {
+        background-color: #13271e;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #ffdf1b;
+    }
+    .market-title {
         color: #ffdf1b !important;
+        font-size: 13px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+    }
+    .market-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    .market-value {
+        color: #00ffcc;
+        font-weight: bold;
     }
     </style>
-""", unsafe_allow_html=True) # 🟢 CORREGIDO AQUÍ
-
-st.title("🟢 Bet365 Analytics Lab — Premier League AI")
-st.markdown("<p style='color: #ffdf1b; font-weight: bold;'>SISTEMA HÍBRIDO: BAYESIAN POISSON & XGBOOST AUDITOR</p>", unsafe_allow_html=True)
-st.markdown("---")
+""", unsafe_allow_html=True)
 
 # ==============================================================================
-# 💾 CARGA Y PARSEO DE DATOS (CON PARCHE DE EQUIPOS NUEVOS/ASCENDIDOS)
+# 💾 NÚCLEO DE DATOS E INYECCIÓN DE CLUBES NUEVOS
 # ==============================================================================
 @st.cache_data
 def cargar_y_reparar_base_datos():
     with open("bayes_data_6years.json", "r") as f:
         data = json.load(f)
     
-    # 🚨 LISTA DE LOS 20 EQUIPOS REALES DE LA PREMIER LEAGUE ACTUAL
     equipos_actuales_2026 = [
         "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", 
         "Chelsea", "Crystal Palace", "Everton", "Fulham", "Ipswich", 
@@ -67,7 +105,7 @@ def cargar_y_reparar_base_datos():
         "Nottingham", "Southampton", "Tottenham", "West Ham", "Wolves"
     ]
     
-    # Calcular los promedios globales de la liga para usarlos como "red de seguridad"
+    # Red de seguridad para recién ascendidos
     ataques = [e["attack"] for e in data["teams"].values()]
     defensas = [e["defense"] for e in data["teams"].values()]
     corners_a = [e["corners_att"] for e in data["teams"].values()]
@@ -80,17 +118,13 @@ def cargar_y_reparar_base_datos():
     avg_corners_def = np.mean(corners_d)
     avg_cards = np.mean(cards)
     
-    # Inyectar de forma automática los clubes nuevos que no tengan historial en el archivo JSON
     for eq in equipos_actuales_2026:
         if eq not in data["teams"]:
             data["teams"][eq] = {
-                "attack": round(avg_attack, 2),
-                "defense": round(avg_defense, 2),
-                "corners_att": round(avg_corners_att, 2),
-                "corners_def": round(avg_corners_def, 2),
+                "attack": round(avg_attack, 2), "defense": round(avg_defense, 2),
+                "corners_att": round(avg_corners_att, 2), "corners_def": round(avg_corners_def, 2),
                 "cards_recv": round(avg_cards, 2)
             }
-            
     return data
 
 @st.cache_resource
@@ -99,121 +133,187 @@ def cargar_modelo_xgb():
     modelo.load_model("xgboost_goles_model.json")
     return modelo
 
-try:
-    db = cargar_y_reparar_base_datos()
-    modelo_xgb = cargar_modelo_xgb()
-except Exception as e:
-    st.error(f"❌ Error crítico en los activos de datos: {e}")
-    st.stop()
-
-# ==============================================================================
-# 🎮 MENÚS DESPLEGABLES (CONTROLES DE SELECCIÓN)
-# ==============================================================================
+db = cargar_y_reparar_base_datos()
+modelo_xgb = cargar_modelo_xgb()
 lista_equipos = sorted(list(db["teams"].keys()))
 
-col_l, col_v = st.columns(2)
-with col_l:
-    equipo_local = st.selectbox("🏟️ LOCAL (Home Team):", lista_equipos, index=lista_equipos.index("Arsenal") if "Arsenal" in lista_equipos else 0)
-with col_v:
-    equipo_visitante = st.selectbox("✈️ VISITANTE (Away Team):", lista_equipos, index=lista_equipos.index("Man City") if "Man City" in lista_equipos else 1)
+# Controles de Selección
+col_sel1, col_sel2 = st.columns(2)
+with col_sel1:
+    eq_l = st.selectbox("🏟️ EQUIPO LOCAL:", lista_equipos, index=lista_equipos.index("Arsenal") if "Arsenal" in lista_equipos else 0)
+with col_sel2:
+    eq_v = st.selectbox("✈️ EQUIPO VISITANTE:", lista_equipos, index=lista_equipos.index("Man City") if "Man City" in lista_equipos else 1)
 
-if equipo_local == equipo_visitante:
-    st.warning("⚠️ Selecciona dos equipos rivales distintos para ejecutar el algoritmo.")
+if eq_l == eq_v:
+    st.warning("Selecciona dos rivales diferentes.")
     st.stop()
 
 # ==============================================================================
-# 🧮 OPERACIONES MATEMÁTICAS CENTRALES
+# 🧮 CÁLCULO MULTI-MODELO (MATRICES ESTOCÁSTICAS)
 # ==============================================================================
-data_l = db["teams"][equipo_local]
-data_v = db["teams"][equipo_visitante]
-intercept = db["intercept"]
-home_effect = db["home_effect"]
+data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
+intercept, home_effect = db["intercept"], db["home_effect"]
 
-# MODELO 1: Cálculos Teóricos Bayes/Poisson
-lambda_goles_l = np.exp(intercept + home_effect + data_l["attack"] - data_v["defense"])
-lambda_goles_v = np.exp(intercept - home_effect + data_v["attack"] - data_l["defense"])
-xG_total_poisson = lambda_goles_l + lambda_goles_v
+# 1. MODELO POISSON / BAYES
+lambda_l_bayes = np.exp(intercept + home_effect + data_l["attack"] - data_v["defense"])
+lambda_v_bayes = np.exp(intercept - home_effect + data_v["attack"] - data_l["defense"])
 
-# MODELO 2: Inferencia de Machine Learning XGBoost V2
-vector_partido = pd.DataFrame([{
-    'home_effect_global': home_effect,
-    'idx_ataque_local': data_l["attack"],
-    'idx_defensa_local': data_l["defense"],
-    'idx_ataque_visita': data_v["attack"],
-    'idx_defensa_visita': data_v["defense"]
-}])
-prob_xgb = modelo_xgb.predict_proba(vector_partido)[0][1] * 100
+matrix_bayes = np.zeros((6, 6))
+for i in range(6):
+    for j in range(6):
+        matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
-# Córners y Tarjetas (Poisson)
-lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
-lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
-total_corners = lambda_corners_l + lambda_corners_v
-prob_over_95_c = (1 - stats.poisson.cdf(9, total_corners)) * 100
+# 2. MODELO XGBOOST (Auditoría de Over 2.5 y calibración de distorsión)
+vector = pd.DataFrame([{'home_effect_global': home_effect, 'idx_ataque_local': data_l["attack"], 'idx_defensa_local': data_l["defense"], 'idx_ataque_visita': data_v["attack"], 'idx_defensa_visita': data_v["defense"]}])
+prob_over25_xgb = modelo_xgb.predict_proba(vector)[0][1]
 
-total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
-prob_over_35_t = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
+# Calibramos la matriz de XGBoost ajustando el xG teórico para que converja con la probabilidad de Over del ML
+prob_over25_bayes = 1 - (matrix_bayes[0,0] + matrix_bayes[0,1] + matrix_bayes[0,2] + matrix_bayes[1,0] + matrix_bayes[1,1] + matrix_bayes[2,0])
+factor_ajuste = prob_over25_xgb / max(prob_over25_bayes, 0.01)
 
-# Generar la tabla del Top 10 Marcadores con Poisson
-max_goles = 6
-marcadores_lista = []
-for goles_l in range(max_goles):
-    for goles_v in range(max_goles):
-        prob_l = stats.poisson.pmf(goles_l, lambda_goles_l)
-        prob_v = stats.poisson.pmf(goles_v, lambda_goles_v)
-        prob_marcador = prob_l * prob_v * 100
-        marcadores_lista.append({
-            "Marcador Exacto": f"{goles_l} - {goles_v}",
-            "Probabilidad": round(prob_marcador, 2)
-        })
-df_top10 = pd.DataFrame(marcadores_lista).sort_values(by="Probabilidad", ascending=False).head(10).reset_index(drop=True)
+lambda_l_xgb = lambda_l_bayes * np.sqrt(factor_ajuste)
+lambda_v_xgb = lambda_v_bayes * np.sqrt(factor_ajuste)
+
+matrix_xgb = np.zeros((6, 6))
+for i in range(6):
+    for j in range(6):
+        matrix_xgb[i, j] = stats.poisson.pmf(i, lambda_l_xgb) * stats.poisson.pmf(j, lambda_v_xgb)
+
+# 3. ENSAMBLE COMBINADO (50% Bayes + 50% XGBoost)
+matrix_combinado = (matrix_bayes + matrix_xgb) / 2
+lambda_l_comb = (lambda_l_bayes + lambda_l_xgb) / 2
+lambda_v_comb = (lambda_v_bayes + lambda_v_xgb) / 2
+
+# Función auxiliar para extraer métricas 1X2 desde cualquier matriz
+def procesar_metricas_mercado(matrix, l_local, l_visita):
+    p_l = np.sum(np.triu(matrix, 1).T) # i > j
+    p_e = np.sum(np.diag(matrix))      # i == j
+    p_v = np.sum(np.tril(matrix, -1).T) # i < j
+    return f"{p_l*100:.1f}%", f"{p_e*100:.1f}%", f"{p_v*100:.1f}%", f"{l_local:.2f} vs {l_visita:.2f}"
 
 # ==============================================================================
-# 🖥️ DESPLIEGUE VISUAL POR ENFOQUES SEPARADOS
+# 📊 RENDERING DE LA TABLA MÁSTER (1X2)
 # ==============================================================================
-st.markdown(f"### <span style='color: #ffdf1b;'>CUOTAS ANALÍTICAS:</span> {equipo_local.upper()} vs {equipo_visitante.upper()}", unsafe_allow_html=True)
+st.markdown("### 📊 Tabla de Probabilidades de Mercados Principales (1X2)")
 
-tab_goles, tab_props = st.tabs(["⚽ MERCADO DE GOLES (ENFOQUES SEPARADOS)", "📐 MERCADOS COMPLEMENTARIOS"])
+m_comb = procesar_metricas_mercado(matrix_combinado, lambda_l_comb, lambda_v_comb)
+m_xgb = procesar_metricas_mercado(matrix_xgb, lambda_l_xgb, lambda_v_xgb)
+m_bayes = procesar_metricas_mercado(matrix_bayes, lambda_l_bayes, lambda_v_bayes)
 
-with tab_goles:
-    col_bayes, col_xgb_model = st.columns(2)
+html_table = f"""
+<table class="main-table">
+    <tr>
+        <th>MÉTODO DE CÁLCULO</th>
+        <th>GANA {eq_l.upper()} (1)</th>
+        <th>EMPATE (X)</th>
+        <th>GANA {eq_v.upper()} (2)</th>
+        <th>GOL ESPERADO (xG)</th>
+    </tr>
+    <tr>
+        <td>💛 <b>Ensamble Combinado</b></td>
+        <td><b>{m_comb[0]}</b></td><td><b>{m_comb[1]}</b></td><td><b>{m_comb[2]}</b></td><td>{m_comb[3]}</td>
+    </tr>
+    <tr>
+        <td>🌲 XGBoost Híbrido (Rachas)</td>
+        <td>{m_xgb[0]}</td><td>{m_xgb[1]}</td><td>{m_xgb[2]}</td><td>{m_xgb[3]}</td>
+    </tr>
+    <tr>
+        <td>🏛️ PyMC Bayes (Jerarquía)</td>
+        <td>{m_bayes[0]}</td><td>{m_bayes[1]}</td><td>{m_bayes[2]}</td><td>{m_bayes[3]}</td>
+    </tr>
+</table>
+"""
+st.markdown(html_table, unsafe_allow_html=True)
+
+# ==============================================================================
+# 🎛️ FILTRO DE ENFOQUE ANALÍTICO ACTIVO
+# ==============================================================================
+st.write("Filtro de Enfoque Analítico Activo")
+enfoque = st.radio("", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
+
+# Asignación de matriz activa según el filtro
+if enfoque == "Combinado":
+    matriz_activa = matrix_combinado
+elif enfoque == "XGBoost":
+    matriz_activa = matrix_xgb
+else:
+    matriz_activa = matrix_bayes
+
+# ==============================================================================
+# 🧩 BLOQUE INFERIOR DINÁMICO (MATRIZ VS COLUMNA DE PROPUESTAS)
+# ==============================================================================
+col_izq, col_der = st.columns([1.3, 1])
+
+with col_izq:
+    st.markdown("### 🟥 Matriz Estocástica de Marcadores (%)")
     
-    with col_bayes:
-        st.markdown("<div style='background-color: #0f3524; padding: 15px; border-radius: 5px; border-left: 5px solid #ffdf1b;'><h4>📐 1. ENFOQUE BAYESIANO / POISSON (Histórico)</h4></div>", unsafe_allow_html=True)
-        st.write("Métricas de rendimiento puras proyectadas matemáticamente por los últimos 6 años:")
+    # Generar tabla HTML responsiva para la matriz térmica (Cerrada a 6x6, de 0 a 5 goles)
+    grid_html = '<table class="matrix-table">'
+    # Renderizado de filas de arriba hacia abajo (Goles Local de 5 a 0)
+    for i in reversed(range(6)):
+        grid_html += "<tr>"
+        grid_html += f'<td style="color:#a3b8b0; font-size:11px; font-weight:bold; width:45px;">{eq_l[:3].upper()} {i}</td>'
+        for j in range(6):
+            val = matriz_activa[i, j] * 100
+            # Paleta dinámica verde-amarilla según probabilidad
+            if val > 8.0:
+                bg = f"rgba(255, 223, 27, {min(val/12, 1.0)})"
+                color = "#000000"
+            else:
+                bg = f"rgba(19, 150, 91, {min(val/6, 1.0)})"
+                color = "#ffffff"
+                
+            grid_html += f'<td class="matrix-cell" style="background-color: {bg}; color: {color};">{val:.1f}%</td>'
+        grid_html += "</tr>"
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric(f"xG {equipo_local}", f"{lambda_goles_l:.2f}")
-        c2.metric(f"xG {equipo_visitante}", f"{lambda_goles_v:.2f}")
-        c3.metric("Línea Teórica", f"{xG_total_poisson:.2f}")
-        
-        st.markdown("##### 🎯 Top 10 Resultados más Probables:")
-        st.table(df_top10)
-        
-    with col_xgb_model:
-        st.markdown("<div style='background-color: #1a3c40; padding: 15px; border-radius: 5px; border-left: 5px solid #00ffcc;'><h4>🤖 2. ENFOQUE MACHINE LEARNING (XGBoost V2)</h4></div>", unsafe_allow_html=True)
-        st.write("Auditoría inteligente basada en rachas dinámicas recientes y balance de poder de las plantillas:")
-        
-        st.metric("Probabilidad IA de OVER 2.5 GOLES", f"{prob_xgb:.1f}%")
-        
-        st.markdown("##### 🔍 Dictamen del Árbol de Decisión:")
-        if prob_xgb >= 55.0:
-            st.markdown(f"<div style='background-color: #13271e; padding: 15px; border: 1px solid #ffdf1b; color: #ffdf1b; font-weight: bold;'>🔥 SEÑAL DE VALOR DETECTADA (+EV)<br>El modelo de Machine Learning encuentra una alta inercia ofensiva. Se recomienda buscar líneas de Over.</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div style='background-color: #221c1c; padding: 15px; border: 1px solid #ff4d4d; color: #ff4d4d;'>⚠️ FILTRO DE RIESGO ACTIVADO (UNDER VALUE)<br>XGBoost detecta desaceleración en las rachas o emparejamientos defensivos cerrados. La línea teórica podría estar inflada por la casa.</div>", unsafe_allow_html=True)
-
-with tab_props:
-    col_c, col_t = st.columns(2)
+    # Fila de cabecera inferior (Goles Visitante de 0 a 5)
+    grid_html += "<tr><td></td>"
+    for j in range(6):
+        grid_html += f'<td class="matrix-header">{eq_v[:3].upper()} {j}</td>'
+    grid_html += "</tr></table>"
     
-    with col_c:
-        st.markdown("#### 📐 CÓRNERS (Modelo de Intersección)")
-        cc1, cc2, cc3 = st.columns(3)
-        cc1.metric(f"Forza {equipo_local}", f"{lambda_corners_l:.2f}")
-        cc2.metric(f"Forza {equipo_visitante}", f"{lambda_corners_v:.2f}")
-        cc3.metric("Línea Esperada", f"{total_corners:.2f}")
-        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 9.5 CÓRNERS: {prob_over_95_c:.1f}%</p>", unsafe_allow_html=True)
-        
-    with col_t:
-        st.markdown("#### 🟨 TARJETAS (Índice de Agresividad)")
-        ct1, ct2 = st.columns(2)
-        ct1.metric("Puntos Esperados", f"{total_tarjetas:.2f}")
-        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 3.5 TARJETAS: {prob_over_35_t:.1f}%</p>", unsafe_allow_html=True)
+    st.markdown(grid_html, unsafe_allow_html=True)
+
+with col_der:
+    st.markdown("### 📊 Probabilidades de Mercados Adicionales")
+    
+    # Cálculos derivados del enfoque seleccionado
+    p_btts_si = sum(matriz_activa[i, j] for i in range(1, 6) for j in range(1, 6)) * 100
+    p_btts_no = 100 - p_btts_si
+    
+    p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
+    p_over25 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 2.5) * 100
+    p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
+    
+    html_sidebar = f"""
+    <div class="market-box">
+        <div class="market-title">🌍 AMBOS EQUIPOS ANOTAN (BTTS)</div>
+        <div class="market-row"><span>Sí (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
+        <div class="market-row"><span>No (Both Teams to Score - No)</span><span class="market-value">{p_btts_no:.1f}%</span></div>
+    </div>
+    <div class="market-box">
+        <div class="market-title">📊 TOTALES DE GOLES (OVER / UNDER)</div>
+        <div class="market-row"><span>Más de 1.5 (Over 1.5)</span><span class="market-value">{p_over15:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 1.5 (Under 1.5)</span><span class="market-value">{100-p_over15:.1f}%</span></div>
+        <div class="market-row" style="background: rgba(255,223,27,0.1); padding: 2px 0;">
+            <span style="color:#ffdf1b; font-weight:bold;">Más de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
+        </div>
+        <div class="market-row"><span>Menos de 2.5 (Under 2.5)</span><span class="market-value">{100-p_over25:.1f}%</span></div>
+        <div class="market-row"><span>Más de 3.5 (Over 3.5)</span><span class="market-value">{p_over35:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 3.5 (Under 3.5)</span><span class="market-value">{100-p_over35:.1f}%</span></div>
+    </div>
+    """
+    st.markdown(html_sidebar, unsafe_allow_html=True)
+    
+    # Tabla Inferior: Top 10 Scores Ordenados
+    st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
+    top_lista = []
+    for i in range(6):
+        for j in range(6):
+            top_lista.append({"Score": f"{eq_l} {i} - {j} {eq_v}", "P": matriz_activa[i, j] * 100})
+    df_top = pd.DataFrame(top_lista).sort_values(by="P", ascending=False).head(10).reset_index(drop=True)
+    
+    df_top.index += 1
+    df_top.columns = ["SCORE PROBABLE", "PROBABILIDAD MKT"]
+    df_top["PROBABILIDAD MKT"] = df_top["PROBABILIDAD MKT"].map("{:.1f}%".format)
+    st.table(df_top)
