@@ -8,7 +8,7 @@ import pandas as pd
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="La Biblia Del Pick", layout="wide", page_icon="📊")
+st.set_page_config(page_title="La biblia del Pick", layout="wide", page_icon="📊")
 
 st.markdown("""
     <style>
@@ -125,7 +125,7 @@ for i in range(6):
 matrix_combinado = (matrix_bayes + matrix_xgb) / 2
 lambda_l_comb, lambda_v_comb = (lambda_l_bayes + lambda_l_xgb) / 2, (lambda_v_bayes + lambda_v_xgb) / 2
 
-# 📐 MÚLTIPLES LÍNEAS DE CÓRNERS (Poisson Integrado)
+# Múltiples líneas de córners
 lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
 lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
 total_corners = lambda_corners_l + lambda_corners_v
@@ -133,7 +133,7 @@ prob_c_85 = (1 - stats.poisson.cdf(8, total_corners)) * 100
 prob_c_95 = (1 - stats.poisson.cdf(9, total_corners)) * 100
 prob_c_105 = (1 - stats.poisson.cdf(10, total_corners)) * 100
 
-# 🟨 MÚLTIPLES LÍNEAS DE TARJETAS
+# Múltiples líneas de tarjetas
 total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
 prob_t_25 = (1 - stats.poisson.cdf(2, total_tarjetas)) * 100
 prob_t_35 = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
@@ -252,7 +252,7 @@ with col_der:
         <div class="market-row"><span>Más de 4.5 (Over 4.5)</span><span class="market-value">{prob_t_45:.1f}%</span></div>
         <div class="market-row"><span>Menos de 4.5 (Under 4.5)</span><span class="market-value">{100-prob_t_45:.1f}%</span></div>
     </div>
-    "" style="color: #ff4d4d !important;"
+    """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
@@ -269,13 +269,14 @@ with col_der:
     st.table(df_visual)
 
 # ==============================================================================
-# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (EXPANDIDO COMPLETO)
+# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (IMÁGEN EN LIMPIO)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Reporte de Análisis de Producción")
 
 datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
 
+# 🟢 CORRECCIÓN DE SINTAXIS FINAL Y ESCAPE DE SCRIPT LLAVES
 html_reporte_premium = f"""
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -307,7 +308,7 @@ html_reporte_premium = f"""
                 <li style="padding: 2px 0; font-size:12px;">• Sí: {p_btts_si:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px;">• No: {p_btts_no:.1f}%</li>
             </ul>
-            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
                 <li style="padding: 2px 0; font-size:11px;">• Over 8.5: {prob_c_85:.1f}% | Und: {100-prob_c_85:.1f}%</li>
                 <li style="padding: 2px 0; font-size:11px; font-weight: bold; color: #ffdf1b;">• Over 9.5: {prob_c_95:.1f}% | Und: {100-prob_c_95:.1f}%</li>
@@ -321,7 +322,7 @@ html_reporte_premium = f"""
                 <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ffdf1b;">• Over 2.5: {p_over25:.1f}% | Und: {100-p_over25:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px;">• Over 3.5: {p_over35:.1f}%</li>
             </ul>
-            <div style="font-size: 12px; font-weight: bold; color: #ff4d4d; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
                 <li style="padding: 2px 0; font-size:11px;">• Over 2.5: {prob_t_25:.1f}% | Und: {100-prob_t_25:.1f}%</li>
                 <li style="padding: 2px 0; font-size:11px; font-weight: bold; color: #ff4d4d;">• Over 3.5: {prob_t_35:.1f}% | Und: {100-prob_t_35:.1f}%</li>
@@ -332,10 +333,10 @@ html_reporte_premium = f"""
     
     <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #00ffcc;">🏆 TOP MARCADORES EXACTOS PROBABLES:</div>
     <ul style="list-style-type: none; padding-left: 15px; font-family: monospace; font-size: 14px; margin-bottom: 0;">
-        <li style="padding: 3px 0;"><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']})</b></li>
-        <li style="padding: 3px 0;">#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']})</li>
-        <li style="padding: 3px 0;">#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']})</li>
-        <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']})</li>
+        <li style="padding: 3px 0;"><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)</b></li>
+        <li style="padding: 3px 0;">#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li style="padding: 3px 0;">#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']:.1f}%)</li>
     </ul>
     
     <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Tómese como probabilidades</div>
@@ -350,7 +351,7 @@ function descargarReporte() {{
         logging: false
     }}).then(canvas => {{
         const link = document.createElement("a");
-        link.download = "Analisis_{eq_l}_vs_{eq_v}.png";
+        link.download = "Analisis_" + "{eq_l}" + "_vs_" + "{eq_v}" + ".png";
         link.href = canvas.toDataURL("image/png");
         link.click();
     }});
