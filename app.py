@@ -8,7 +8,7 @@ import pandas as pd
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
+st.set_page_config(page_title="La Biblia del Pick", layout="wide", page_icon="📊")
 
 st.markdown("""
     <style>
