@@ -6,7 +6,7 @@ import json
 import pandas as pd
 
 # ==============================================================================
-# 🎨 ESTILO PREMIUM PERSONALIZADO (INYECCIÓN DE COLOR ESTILO BET365)
+# 🎨 CONFIGURACIÓN E INYECCIÓN DE DISEÑO PREMIUM (ESTILO BET365)
 # ==============================================================================
 st.set_page_config(page_title="🚨 Bet365 Style - AI Predictor", layout="wide", page_icon="📊")
 
@@ -45,10 +45,10 @@ st.markdown("""
         color: #ffdf1b !important;
     }
     </style>
-""", unsafe_index=True)
+""", unsafe_allow_html=True) # 🟢 CORREGIDO AQUÍ
 
 st.title("🟢 Bet365 Analytics Lab — Premier League AI")
-st.markdown("<p style='color: #ffdf1b; font-weight: bold;'>SISTEMA HÍBRIDO: BAYESIAN POISSON & XGBOOST AUDITOR</p>", unsafe_index=True)
+st.markdown("<p style='color: #ffdf1b; font-weight: bold;'>SISTEMA HÍBRIDO: BAYESIAN POISSON & XGBOOST AUDITOR</p>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ==============================================================================
@@ -60,7 +60,6 @@ def cargar_y_reparar_base_datos():
         data = json.load(f)
     
     # 🚨 LISTA DE LOS 20 EQUIPOS REALES DE LA PREMIER LEAGUE ACTUAL
-    # Agrega aquí los nombres exactos tal como los envía tu API de Football-Data.org
     equipos_actuales_2026 = [
         "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", 
         "Chelsea", "Crystal Palace", "Everton", "Fulham", "Ipswich", 
@@ -171,16 +170,15 @@ df_top10 = pd.DataFrame(marcadores_lista).sort_values(by="Probabilidad", ascendi
 # ==============================================================================
 # 🖥️ DESPLIEGUE VISUAL POR ENFOQUES SEPARADOS
 # ==============================================================================
-st.markdown(f"### <span style='color: #ffdf1b;'>CUOTAS ANALÍTICAS:</span> {equipo_local.upper()} vs {equipo_visitante.upper()}", unsafe_index=True)
+st.markdown(f"### <span style='color: #ffdf1b;'>CUOTAS ANALÍTICAS:</span> {equipo_local.upper()} vs {equipo_visitante.upper()}", unsafe_allow_html=True)
 
 tab_goles, tab_props = st.tabs(["⚽ MERCADO DE GOLES (ENFOQUES SEPARADOS)", "📐 MERCADOS COMPLEMENTARIOS"])
 
 with tab_goles:
-    # Creamos dos grandes columnas para separar el análisis de ambos modelos
     col_bayes, col_xgb_model = st.columns(2)
     
     with col_bayes:
-        st.markdown("<div style='background-color: #0f3524; padding: 15px; border-radius: 5px; border-left: 5px solid #ffdf1b;'><h4>📐 1. ENFOQUE BAYESIANO / POISSON (Histórico)</h4></div>", unsafe_index=True)
+        st.markdown("<div style='background-color: #0f3524; padding: 15px; border-radius: 5px; border-left: 5px solid #ffdf1b;'><h4>📐 1. ENFOQUE BAYESIANO / POISSON (Histórico)</h4></div>", unsafe_allow_html=True)
         st.write("Métricas de rendimiento puras proyectadas matemáticamente por los últimos 6 años:")
         
         c1, c2, c3 = st.columns(3)
@@ -192,16 +190,16 @@ with tab_goles:
         st.table(df_top10)
         
     with col_xgb_model:
-        st.markdown("<div style='background-color: #1a3c40; padding: 15px; border-radius: 5px; border-left: 5px solid #00ffcc;'><h4>🤖 2. ENFOQUE MACHINE LEARNING (XGBoost V2)</h4></div>", unsafe_index=True)
+        st.markdown("<div style='background-color: #1a3c40; padding: 15px; border-radius: 5px; border-left: 5px solid #00ffcc;'><h4>🤖 2. ENFOQUE MACHINE LEARNING (XGBoost V2)</h4></div>", unsafe_allow_html=True)
         st.write("Auditoría inteligente basada en rachas dinámicas recientes y balance de poder de las plantillas:")
         
         st.metric("Probabilidad IA de OVER 2.5 GOLES", f"{prob_xgb:.1f}%")
         
         st.markdown("##### 🔍 Dictamen del Árbol de Decisión:")
         if prob_xgb >= 55.0:
-            st.markdown(f"<div style='background-color: #13271e; padding: 15px; border: 1px solid #ffdf1b; color: #ffdf1b; font-weight: bold;'>🔥 SEÑAL DE VALOR DETECTADA (+EV)<br>El modelo de Machine Learning encuentra una alta inercia ofensiva. Se recomienda buscar líneas de Over.</div>", unsafe_index=True)
+            st.markdown(f"<div style='background-color: #13271e; padding: 15px; border: 1px solid #ffdf1b; color: #ffdf1b; font-weight: bold;'>🔥 SEÑAL DE VALOR DETECTADA (+EV)<br>El modelo de Machine Learning encuentra una alta inercia ofensiva. Se recomienda buscar líneas de Over.</div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div style='background-color: #221c1c; padding: 15px; border: 1px solid #ff4d4d; color: #ff4d4d;'>⚠️ FILTRO DE RIESGO ACTIVADO (UNDER VALUE)<br>XGBoost detecta desaceleración en las rachas o emparejamientos defensivos cerrados. La línea teórica podría estar inflada por la casa.</div>", unsafe_index=True)
+            st.markdown(f"<div style='background-color: #221c1c; padding: 15px; border: 1px solid #ff4d4d; color: #ff4d4d;'>⚠️ FILTRO DE RIESGO ACTIVADO (UNDER VALUE)<br>XGBoost detecta desaceleración en las rachas o emparejamientos defensivos cerrados. La línea teórica podría estar inflada por la casa.</div>", unsafe_allow_html=True)
 
 with tab_props:
     col_c, col_t = st.columns(2)
@@ -212,10 +210,10 @@ with tab_props:
         cc1.metric(f"Forza {equipo_local}", f"{lambda_corners_l:.2f}")
         cc2.metric(f"Forza {equipo_visitante}", f"{lambda_corners_v:.2f}")
         cc3.metric("Línea Esperada", f"{total_corners:.2f}")
-        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 9.5 CÓRNERS: {prob_over_95_c:.1f}%</p>", unsafe_index=True)
+        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 9.5 CÓRNERS: {prob_over_95_c:.1f}%</p>", unsafe_allow_html=True)
         
     with col_t:
         st.markdown("#### 🟨 TARJETAS (Índice de Agresividad)")
         ct1, ct2 = st.columns(2)
         ct1.metric("Puntos Esperados", f"{total_tarjetas:.2f}")
-        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 3.5 TARJETAS: {prob_over_35_t:.1f}%</p>", unsafe_index=True)
+        st.markdown(f"<p style='color:#ffdf1b; font-weight:bold;'>Probabilidad de OVER 3.5 TARJETAS: {prob_over_35_t:.1f}%</p>", unsafe_allow_html=True)
