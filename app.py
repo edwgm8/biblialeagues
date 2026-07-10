@@ -8,7 +8,7 @@ import pandas as pd
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="La Biblia del Pick", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
 
 st.markdown("""
     <style>
@@ -31,29 +31,6 @@ st.markdown("""
     .market-title { color: #ffdf1b !important; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
     .market-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
     .market-value { color: #00ffcc; font-weight: bold; }
-    
-    /* 📱 ESTILOS ESTRUCTURALES DEL REPORTE PREMIUM (CLON DE TU IMAGEN) */
-    .report-container {
-        background-color: #111111;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        padding: 35px;
-        border-radius: 10px;
-        max-width: 650px;
-        margin: 0 auto;
-        color: #ffffff;
-        border: 1px solid #222222;
-    }
-    .report-title { font-size: 26px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
-    .report-subtitle { font-size: 13px; color: #ffdf1b; text-align: center; font-weight: bold; letter-spacing: 2px; margin-bottom: 25px; }
-    .report-match { font-size: 22px; font-weight: bold; text-align: center; background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 5px; }
-    .report-enfoque { font-size: 14px; color: #00ffcc; text-align: center; font-style: italic; margin-bottom: 30px; }
-    .section-title { font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; display: flex; align-items: center; }
-    .report-list { list-style-type: none; padding-left: 15px; margin-bottom: 20px; }
-    .report-list li { font-size: 14px; padding: 4px 0; color: #dddddd; }
-    .report-grid { display: flex; justify-content: space-between; gap: 20px; }
-    .report-col { flex: 1; background: #161616; padding: 12px; border-radius: 6px; }
-    .col-title { font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px; }
-    .highlight-row { font-weight: bold; color: #ffdf1b !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -99,8 +76,13 @@ def cargar_modelo_xgb():
     modelo.load_model("xgboost_goles_model.json")
     return modelo
 
-db = cargar_y_reparar_base_datos()
-modelo_xgb = cargar_modelo_xgb()
+try:
+    db = cargar_y_reparar_base_datos()
+    modelo_xgb = cargar_modelo_xgb()
+except Exception as e:
+    st.error(f"Error al inicializar componentes base: {e}")
+    st.stop()
+
 lista_equipos = sorted(list(db["teams"].keys()))
 
 col_sel1, col_sel2 = st.columns(2)
@@ -114,11 +96,12 @@ if eq_l == eq_v:
     st.stop()
 
 # ==============================================================================
-# 🧮 CÁLCULO MULTI-MODELO
+# 🧮 CÁLCULO MULTI-MODELO (MATRICES BASE)
 # ==============================================================================
 data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
 intercept, home_effect = db["intercept"], db["home_effect"]
 
+# MODELO 1: PyMC Bayes / Poisson Puro
 lambda_l_bayes = np.exp(intercept + home_effect + data_l["attack"] - data_v["defense"])
 lambda_v_bayes = np.exp(intercept - home_effect + data_v["attack"] - data_l["defense"])
 
@@ -127,6 +110,7 @@ for i in range(6):
     for j in range(6):
         matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
+# MODELO 2: XGBoost Híbrido
 matriz_pred = np.array([[home_effect, data_l["attack"], data_l["defense"], data_v["attack"], data_v["defense"]]], dtype=np.float32)
 prob_over25_xgb = modelo_xgb.predict_proba(matriz_pred)[0][1]
 
@@ -140,9 +124,11 @@ for i in range(6):
     for j in range(6):
         matrix_xgb[i, j] = stats.poisson.pmf(i, lambda_l_xgb) * stats.poisson.pmf(j, lambda_v_xgb)
 
+# MODELO 3: Ensamble Combinado
 matrix_combinado = (matrix_bayes + matrix_xgb) / 2
 lambda_l_comb, lambda_v_comb = (lambda_l_bayes + lambda_l_xgb) / 2, (lambda_v_bayes + lambda_v_xgb) / 2
 
+# Props fijas (Córners y Tarjetas)
 lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
 lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
 total_corners = lambda_corners_l + lambda_corners_v
@@ -195,11 +181,19 @@ html_table = f"""
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
+# 🌟 CONTROL INTERACTIVO DE ENFOQUES ACTIVO
 enfoque = st.radio("Enfoque Analítico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
-matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
+
+# Asignación de la matriz que controlará absolutamente todo el bloque inferior
+if enfoque == "Combinado":
+    matriz_activa = matrix_combinado
+elif enfoque == "XGBoost":
+    matriz_activa = matrix_xgb
+else:
+    matriz_activa = matrix_bayes
 
 # ==============================================================================
-# 🧩 BLOQUE INFERIOR DINÁMICO
+# 🧩 BLOQUE INFERIOR DINÁMICO (MATRIZ VS PROPUESTAS EN TIEMPO REAL)
 # ==============================================================================
 col_izq, col_der = st.columns([1.3, 1])
 
@@ -252,30 +246,28 @@ with col_der:
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
+    # 🟢 CORRECCIÓN CENTRAL: Se extraen las probabilidades basándose de manera estricta en la 'matriz_activa' elegida por el radio button
     top_lista = []
     for i in range(6):
         for j in range(6):
             top_lista.append({"SCORE PROBABLE": f"{eq_l} {i} - {j} {eq_v}", "PROBABILIDAD MKT": matriz_activa[i, j] * 100})
+            
     df_top = pd.DataFrame(top_lista).sort_values(by="PROBABILIDAD MKT", ascending=False).head(10).reset_index(drop=True)
     df_top.index += 1
+    
     df_visual = df_top.copy()
     df_visual["PROBABILIDAD MKT"] = df_visual["PROBABILIDAD MKT"].map("{:.1f}%".format)
     st.table(df_visual)
 
 # ==============================================================================
-# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (HTML/CSS/JS WORKSTATION)
+# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (DINÁMICO CON EL ENFOQUE)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Reporte de Análisis de Producción")
 
 datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
-p_btts_no = 100 - p_btts_si
-p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
-p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
 
-# Estructura máster unificada con script de captura automática
 html_reporte_premium = f"""
-<!-- Cargamos la librería html2canvas desde un servidor seguro CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <div style="text-align: center; margin-bottom: 20px;">
@@ -331,13 +323,13 @@ html_reporte_premium = f"""
     
     <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #00ffcc;">🏆 TOP MARCADORES EXACTOS PROBABLES:</div>
     <ul style="list-style-type: none; padding-left: 15px; font-family: monospace; font-size: 14px; margin-bottom: 0;">
-        <li style="padding: 3px 0;"><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']})</b></li>
-        <li style="padding: 3px 0;">#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']})</li>
-        <li style="padding: 3px 0;">#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']})</li>
-        <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']})</li>
+        <li style="padding: 3px 0;"><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)</b></li>
+        <li style="padding: 3px 0;">#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li style="padding: 3px 0;">#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']:.1f}%)</li>
     </ul>
     
-    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Tómese como probabilidades</div>
+    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Generado por Bet365 Analytics Lab AI</div>
 </div>
 
 <script>
@@ -345,7 +337,7 @@ function descargarReporte() {{
     const element = document.getElementById("capture-report");
     html2canvas(element, {{
         backgroundColor: "#111111",
-        scale: 2, // Fuerza renderizado en doble resolución (HD ready)
+        scale: 2,
         logging: false
     }}).then(canvas => {{
         const link = document.createElement("a");
@@ -357,5 +349,4 @@ function descargarReporte() {{
 </script>
 """
 
-# Renderizado mediante el componente de vista segura de Streamlit con margen para el botón
 st.components.v1.html(html_reporte_premium, height=680, scrolling=False)
