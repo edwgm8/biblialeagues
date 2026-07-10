@@ -5,3 +5,4 @@ scipy
 xgboost
 scikit-learn
 requests
+Pillow
