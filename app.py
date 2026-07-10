@@ -4,6 +4,8 @@ import scipy.stats as stats
 import xgboost as xgb
 import json
 import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
@@ -22,6 +24,29 @@ st.markdown("""
     }
     hr {
         border-top: 1px solid #1f3a30 !important;
+    }
+    /* ENCABEZADO "LA BIBLIA DEL PICK" */
+    .header-box {
+        background-color: #0c3321;
+        border: 2px solid #00ffcc;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .header-box h2 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        color: #ffffff !important;
+    }
+    .header-box p {
+        margin: 5px 0 0 0;
+        font-size: 13px;
+        font-weight: bold;
+        letter-spacing: 3px;
+        color: #ffdf1b !important;
     }
     /* Estilos para las tablas de mercados principales */
     .main-table {
@@ -90,6 +115,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 🏟️ INYECCIÓN DEL ENCABEZADO IDÉNTICO A LA IMAGEN ADJUNTA
+st.markdown("""
+    <div class="header-box">
+        <h2>📊 LA BIBLIA DEL PICK</h2>
+        <p>⚡ ANÁLISIS DEPORTIVO</p>
+    </div>
+""", unsafe_allow_html=True)
+
 # ==============================================================================
 # 💾 NÚCLEO DE DATOS E INYECCIÓN DE LOS 3 ASCENDIDOS CONFIRMADOS
 # ==============================================================================
@@ -98,7 +131,6 @@ def cargar_y_reparar_base_datos():
     with open("bayes_data_6years.json", "r") as f:
         data = json.load(f)
     
-    # 🚨 MAPA OFICIAL CORREGIDO CON TUS TRES ASCENDIDOS
     equipos_actuales_2026 = [
         "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", 
         "Chelsea", "Coventry City", "Crystal Palace", "Everton", "Fulham", 
@@ -106,17 +138,14 @@ def cargar_y_reparar_base_datos():
         "Man United", "Newcastle", "Nottingham", "Tottenham", "West Ham", "Wolves"
     ]
     
-    # Red de seguridad probabilística para los recién ascendidos
     ataques = [e["attack"] for e in data["teams"].values()]
     defensas = [e["defense"] for e in data["teams"].values()]
     corners_a = [e["corners_att"] for e in data["teams"].values()]
     corners_d = [e["corners_def"] for e in data["teams"].values()]
     cards = [e["cards_recv"] for e in data["teams"].values()]
     
-    avg_attack = np.mean(ataques)
-    avg_defense = np.mean(defensas)
-    avg_corners_att = np.mean(corners_a)
-    avg_corners_def = np.mean(corners_d)
+    avg_attack, avg_defense = np.mean(ataques), np.mean(defensas)
+    avg_corners_att, avg_corners_def = np.mean(corners_a), np.mean(corners_d)
     avg_cards = np.mean(cards)
     
     for eq in equipos_actuales_2026:
@@ -138,7 +167,6 @@ db = cargar_y_reparar_base_datos()
 modelo_xgb = cargar_modelo_xgb()
 lista_equipos = sorted(list(db["teams"].keys()))
 
-# Controles de Selección de Partido
 col_sel1, col_sel2 = st.columns(2)
 with col_sel1:
     eq_l = st.selectbox("🏟️ EQUIPO LOCAL:", lista_equipos, index=lista_equipos.index("Arsenal") if "Arsenal" in lista_equipos else 0)
@@ -150,12 +178,11 @@ if eq_l == eq_v:
     st.stop()
 
 # ==============================================================================
-# 🧮 CÁLCULO MULTI-MODELO (MATRICES ESTOCÁSTICAS Y PROPS)
+# 🧮 CÁLCULO MULTI-MODELO
 # ==============================================================================
 data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
 intercept, home_effect = db["intercept"], db["home_effect"]
 
-# 1. MODELO POISSON / BAYES (Goles)
 lambda_l_bayes = np.exp(intercept + home_effect + data_l["attack"] - data_v["defense"])
 lambda_v_bayes = np.exp(intercept - home_effect + data_v["attack"] - data_l["defense"])
 
@@ -164,40 +191,30 @@ for i in range(6):
     for j in range(6):
         matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
-# 2. MODELO XGBOOST (Ajuste por convergencia de Over 2.5)
 vector = pd.DataFrame([{'home_effect_global': home_effect, 'idx_ataque_local': data_l["attack"], 'idx_defensa_local': data_l["defense"], 'idx_ataque_visita': data_v["attack"], 'idx_defensa_visita': data_v["defense"]}])
 prob_over25_xgb = modelo_xgb.predict_proba(vector)[0][1]
 
 prob_over25_bayes = 1 - (matrix_bayes[0,0] + matrix_bayes[0,1] + matrix_bayes[0,2] + matrix_bayes[1,0] + matrix_bayes[1,1] + matrix_bayes[2,0])
 factor_ajuste = prob_over25_xgb / max(prob_over25_bayes, 0.01)
 
-lambda_l_xgb = lambda_l_bayes * np.sqrt(factor_ajuste)
-lambda_v_xgb = lambda_v_bayes * np.sqrt(factor_ajuste)
+lambda_l_xgb, lambda_v_xgb = lambda_l_bayes * np.sqrt(factor_ajuste), lambda_v_bayes * np.sqrt(factor_ajuste)
 
 matrix_xgb = np.zeros((6, 6))
 for i in range(6):
     for j in range(6):
         matrix_xgb[i, j] = stats.poisson.pmf(i, lambda_l_xgb) * stats.poisson.pmf(j, lambda_v_xgb)
 
-# 3. ENSAMBLE COMBINADO
 matrix_combinado = (matrix_bayes + matrix_xgb) / 2
-lambda_l_comb = (lambda_l_bayes + lambda_l_xgb) / 2
-lambda_v_comb = (lambda_v_bayes + lambda_v_xgb) / 2
+lambda_l_comb, lambda_v_comb = (lambda_l_bayes + lambda_l_xgb) / 2, (lambda_v_bayes + lambda_v_xgb) / 2
 
-# 4. MERCADOS COMPLEMENTARIOS (Córners y Tarjetas)
 lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
 lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
 total_corners = lambda_corners_l + lambda_corners_v
-prob_c_85 = (1 - stats.poisson.cdf(8, total_corners)) * 100
 prob_c_95 = (1 - stats.poisson.cdf(9, total_corners)) * 100
-prob_c_105 = (1 - stats.poisson.cdf(10, total_corners)) * 100
 
 total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
-prob_t_25 = (1 - stats.poisson.cdf(2, total_tarjetas)) * 100
 prob_t_35 = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
-prob_t_45 = (1 - stats.poisson.cdf(4, total_tarjetas)) * 100
 
-# Auxiliar 1X2
 def procesar_metricas_mercado(matrix, l_local, l_visita):
     p_l = np.sum(np.triu(matrix, 1).T)
     p_e = np.sum(np.diag(matrix))
@@ -238,108 +255,132 @@ html_table = f"""
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-# Filtro de Enfoque Activo
 st.write("Filtro de Enfoque Analítico Activo")
 enfoque = st.radio("", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
 
-if enfoque == "Combinado":
-    matriz_activa = matrix_combinado
-elif enfoque == "XGBoost":
-    matriz_activa = matrix_xgb
-else:
-    matriz_activa = matrix_bayes
+matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
 
 # ==============================================================================
-# 🧩 BLOQUE INFERIOR DINÁMICO (MATRIZ VS PROPUESTAS DE PRODUCCIÓN)
+# 🧩 BLOQUE INFERIOR DINÁMICO
 # ==============================================================================
 col_izq, col_der = st.columns([1.3, 1])
 
 with col_izq:
     st.markdown("### 🟥 Matriz Estocástica de Marcadores (%)")
-    
     grid_html = '<table class="matrix-table">'
     for i in reversed(range(6)):
         grid_html += "<tr>"
         grid_html += f'<td style="color:#a3b8b0; font-size:11px; font-weight:bold; width:45px;">{eq_l[:3].upper()} {i}</td>'
         for j in range(6):
             val = matriz_activa[i, j] * 100
-            if val > 8.0:
-                bg = f"rgba(255, 223, 27, {min(val/12, 1.0)})"
-                color = "#000000"
-            else:
-                bg = f"rgba(19, 150, 91, {min(val/6, 1.0)})"
-                color = "#ffffff"
+            bg = f"rgba(255, 223, 27, {min(val/12, 1.0)})" if val > 8.0 else f"rgba(19, 150, 91, {min(val/6, 1.0)})"
+            color = "#000000" if val > 8.0 else "#ffffff"
             grid_html += f'<td class="matrix-cell" style="background-color: {bg}; color: {color};">{val:.1f}%</td>'
         grid_html += "</tr>"
-        
     grid_html += "<tr><td></td>"
     for j in range(6):
         grid_html += f'<td class="matrix-header">{eq_v[:3].upper()} {j}</td>'
     grid_html += "</tr></table>"
-    
     st.markdown(grid_html, unsafe_allow_html=True)
 
 with col_der:
     st.markdown("### 📊 Probabilidades de Mercados Adicionales")
-    
-    # Variables de Goles Derivadas
     p_btts_si = sum(matriz_activa[i, j] for i in range(1, 6) for j in range(1, 6)) * 100
     p_btts_no = 100 - p_btts_si
     p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
     p_over25 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 2.5) * 100
-    p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
     
+    prob_c_85 = (1 - stats.poisson.cdf(8, total_corners)) * 100
+    prob_c_105 = (1 - stats.poisson.cdf(10, total_corners)) * 100
+    prob_t_25 = (1 - stats.poisson.cdf(2, total_tarjetas)) * 100
+    prob_t_45 = (1 - stats.poisson.cdf(4, total_tarjetas)) * 100
+
     html_sidebar = f"""
-    <!-- AMBOS EQUIPOS ANOTAN -->
     <div class="market-box">
         <div class="market-title">🌍 AMBOS EQUIPOS ANOTAN (BTTS)</div>
         <div class="market-row"><span>Sí (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
-        <div class="market-row"><span>No (Both Teams to Score - No)</span><span class="market-value">{p_btts_no:.1f}%</span></div>
     </div>
-    
-    <!-- TOTALES DE GOLES -->
     <div class="market-box">
         <div class="market-title">🥅 TOTALES DE GOLES (OVER / UNDER)</div>
-        <div class="market-row"><span>Más de 1.5 (Over 1.5)</span><span class="market-value">{p_over15:.1f}%</span></div>
-        <div class="market-row"><span>Menos de 1.5 (Under 1.5)</span><span class="market-value">{100-p_over15:.1f}%</span></div>
         <div class="market-row" style="background: rgba(255,223,27,0.1); padding: 2px 0;">
             <span style="color:#ffdf1b; font-weight:bold;">Más de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
         </div>
-        <div class="market-row"><span>Menos de 2.5 (Under 2.5)</span><span class="market-value">{100-p_over25:.1f}%</span></div>
-        <div class="market-row"><span>Más de 3.5 (Over 3.5)</span><span class="market-value">{p_over35:.1f}%</span></div>
     </div>
-
-    <!-- MERCADO DE CÓRNERS -->
     <div class="market-box" style="border-left: 4px solid #00ffcc;">
-        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CÓRNERS (PROYECTADO: {total_corners:.1f})</div>
-        <div class="market-row"><span>Más de 8.5 Córners Totales</span><span class="market-value">{prob_c_85:.1f}%</span></div>
-        <div class="market-row" style="background: rgba(0,255,204,0.1); padding: 2px 0;">
-            <span style="color:#00ffcc; font-weight:bold;">Más de 9.5 Córners Totales</span><span style="color:#00ffcc; font-weight:bold;">{prob_c_95:.1f}%</span>
-        </div>
-        <div class="market-row"><span>Más de 10.5 Córners Totales</span><span class="market-value">{prob_c_105:.1f}%</span></div>
+        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CÓRNERS</div>
+        <div class="market-row"><span>Más de 9.5 Córners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
     </div>
-
-    <!-- MERCADO DE TARJETAS -->
     <div class="market-box" style="border-left: 4px solid #ff4d4d;">
-        <div class="market-title" style="color: #ff4d4d !important;">🟨 PUNTOS DE TARJETAS (ÍNDICE MKT: {total_tarjetas:.1f})</div>
-        <div class="market-row"><span>Más de 2.5 Tarjetas</span><span class="market-value">{prob_t_25:.1f}%</span></div>
-        <div class="market-row" style="background: rgba(255,77,77,0.1); padding: 2px 0;">
-            <span style="color:#ff4d4d; font-weight:bold;">Más de 3.5 Tarjetas</span><span style="color:#ff4d4d; font-weight:bold;">{prob_t_35:.1f}%</span>
-        </div>
-        <div class="market-row"><span>Más de 4.5 Tarjetas</span><span class="market-value">{prob_t_45:.1f}%</span></div>
+        <div class="market-title" style="color: #ff4d4d !important;">🟨 PUNTOS DE TARJETAS</div>
+        <div class="market-row"><span>Más de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
     </div>
     """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
-    # Tabla Inferior de Score Exacto
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
     top_lista = []
     for i in range(6):
         for j in range(6):
-            top_lista.append({"Score": f"{eq_l} {i} - {j} {eq_v}", "P": matriz_activa[i, j] * 100})
+            top_lista.append({"Score": f"{eq_l} vs {eq_v}", "Marcador": f"{i} - {j}", "P": matriz_activa[i, j] * 100})
     df_top = pd.DataFrame(top_lista).sort_values(by="P", ascending=False).head(10).reset_index(drop=True)
+
+# ==============================================================================
+# 📸 MOTOR DE GENERACIÓN GRÁFICA (PNG GENERATOR PARA COMPARTIR)
+# ==============================================================================
+st.markdown("---")
+st.markdown("### 📥 Exportar Reporte de Análisis")
+
+def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas, top_scores):
+    # Crear canvas en alta definición (Formato Redes Sociales / Telegram)
+    img = Image.new("RGBA", (800, 700), "#0d1b15")
+    draw = ImageDraw.Draw(img)
     
-    df_top.index += 1
-    df_top.columns = ["SCORE PROBABLE", "PROBABILIDAD MKT"]
-    df_top["PROBABILIDAD MKT"] = df_top["PROBABILIDAD MKT"].map("{:.1f}%".format)
-    st.table(df_top)
+    # Dibujar marcos estilo Bet365
+    draw.rectangle([15, 15, 785, 685], outline="#00ffcc", width=3)
+    draw.rectangle([30, 30, 770, 110], fill="#0c3321", outline="#ffdf1b", width=1)
+    
+    # Textos de encabezado estáticos
+    draw.text((400, 45), "LA BIBLIA DEL PICK", fill="#ffffff", font_size=32, anchor="mm")
+    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", font_size=14, anchor="mm")
+    
+    # Partido actual
+    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", font_size=28, anchor="mm")
+    draw.line([200, 175, 600, 175], fill="#1f3a30", width=2)
+    
+    # Sección 1: Cuotas 1X2
+    draw.text((50, 210), f"Probabilidades 1X2 (Enfoque {enfoque}):", fill="#ffdf1b", font_size=16)
+    draw.text((70, 245), f"• Gana {local}: {m_1x2[0]}", fill="#ffffff", font_size=15)
+    draw.text((70, 275), f"• Empate (X): {m_1x2[1]}", fill="#ffffff", font_size=15)
+    draw.text((70, 305), f"• Gana {visitante}: {m_1x2[2]}", fill="#ffffff", font_size=15)
+    
+    # Sección 2: Mercados Adicionales
+    draw.text((50, 360), "Mercados Principales Proyectados:", fill="#ffdf1b", font_size=16)
+    draw.text((70, 395), f"• Ambos Equipos Anotan (Sí): {btts:.1f}%", fill="#ffffff", font_size=15)
+    draw.text((70, 425), f"• Goles - Más de 2.5 (Over): {over25:.1f}%", fill="#ffffff", font_size=15)
+    draw.text((70, 455), f"• Córners - Más de 9.5 Totales: {corners:.1f}%", fill="#00ffcc", font_size=15)
+    draw.text((70, 485), f"• Tarjetas - Más de 3.5 Totales: {tarjetas:.1f}%", fill="#ff4d4d", font_size=15)
+    
+    # Sección 3: Top 3 Scores Exactos (Derecha)
+    draw.text((460, 210), "Top Marcadores Exactos:", fill="#ffdf1b", font_size=16)
+    for idx, row in top_scores.head(5).iterrows():
+        y_pos = 245 + (idx * 35)
+        draw.text((480, y_pos), f"{idx+1}. Marcador [{row['Marcador']}]: {row['P']:.1f}%", fill="#ffffff", font_size=15)
+        
+    # Pie de página de marca de agua
+    draw.text((400, 650), "Generado por Bet365 Analytics Lab AI", fill="#a3b8b0", font_size=12, anchor="mm")
+    
+    # Convertir a bytes para descarga
+    byte_io = io.BytesIO()
+    img.save(byte_io, 'PNG')
+    return byte_io.getvalue()
+
+# Activar el buffer de descarga
+datos_1x2 = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
+imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35, df_top)
+
+st.download_button(
+    label="📥 Descargar Análisis en Formato PNG",
+    data=imagen_binaria,
+    file_name=f"Analisis_{eq_l}_vs_{eq_v}.png",
+    mime="image/png"
+)
