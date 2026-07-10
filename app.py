@@ -337,7 +337,7 @@ html_reporte_premium = f"""
         <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']})</li>
     </ul>
     
-    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Generado por Bet365 Analytics Lab AI</div>
+    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">EGM</div>
 </div>
 
 <script>
