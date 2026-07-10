@@ -269,69 +269,70 @@ st.markdown("---")
 st.markdown("### 📥 Reporte de Análisis de Producción")
 
 datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
+p_btts_no = 100 - p_btts_si
+p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
+p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
 
-# Maquetación exacta basada en la imagen adjunta del usuario
+# Estilos inyectados internamente en la estructura para forzar el renderizado en el iframe
 html_reporte_premium = f"""
-<div class="report-container">
-    <div class="report-title">LA BIBLIA DEL PICK</div>
-    <div class="report-subtitle">⚡ Análisis Deportivo</div>
+<div style="background-color: #111111; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 35px; border-radius: 10px; max-width: 580px; margin: 0 auto; color: #ffffff; border: 1px solid #222222;">
+    <div style="font-size: 26px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px;">LA BIBLIA DEL PICK</div>
+    <div style="font-size: 13px; color: #ffdf1b; text-align: center; font-weight: bold; letter-spacing: 2px; margin-bottom: 25px;">⚡ Análisis Deportivo</div>
     
-    <div class="report-match">📋 {eq_l.upper()} vs {eq_v.upper()}</div>
-    <div class="report-enfoque">Enfoque Activo: {enfoque}</div>
+    <div style="font-size: 20px; font-weight: bold; text-align: center; background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 5px;">📋 {eq_l.upper()} vs {eq_v.upper()}</div>
+    <div style="font-size: 14px; color: #00ffcc; text-align: center; font-style: italic; margin-bottom: 30px;">Enfoque Activo: {enfoque}</div>
     
-    <div class="section-title">🌐 PROBABILIDADES MERCADO 1X2:</div>
-    <ul class="report-list">
-        <li>• Gana {eq_l}: <b>{datos_1x2_sel[0]}</b></li>
-        <li>• Empate (X): <b>{datos_1x2_sel[1]}</b></li>
-        <li>• Gana {eq_v}: <b>{datos_1x2_sel[2]}</b></li>
+    <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #00ffcc;">📊 PROBABILIDADES MERCADO 1X2:</div>
+    <ul style="list-style-type: none; padding-left: 15px; margin-bottom: 20px;">
+        <li style="padding: 4px 0;">• Gana {eq_l}: <b>{datos_1x2_sel[0]}</b></li>
+        <li style="padding: 4px 0;">• Empate (X): <b>{datos_1x2_sel[1]}</b></li>
+        <li style="padding: 4px 0;">• Gana {eq_v}: <b>{datos_1x2_sel[2]}</b></li>
     </ul>
     
-    <div class="section-title">📊 LÍNEAS DE GOLES Y MERCADOS COMPLEMENTARIOS:</div>
-    <div class="report-grid">
-        <div class="report-col">
-            <div class="col-title">🥅 Ambos Anotan (BTTS)</div>
-            <ul class="report-list" style="padding-left:5px; margin:0;">
-                <li>• Sí: {p_btts_si:.1f}%</li>
-                <li>• No: {p_btts_no:.1f}%</li>
+    <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #ffdf1b;">📊 LÍNEAS DE GOLES Y MERCADOS COMPLEMENTARIOS:</div>
+    <div style="display: flex; justify-content: space-between; gap: 20px;">
+        <div style="flex: 1; background: #161616; padding: 12px; border-radius: 6px;">
+            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🥅 Ambos Anotan (BTTS)</div>
+            <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
+                <li style="padding: 2px 0; font-size:13px;">• Sí: {p_btts_si:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px;">• No: {p_btts_no:.1f}%</li>
             </ul>
-            <div class="col-title" style="color:#00ffcc; margin-top:10px;">📐 Córners (Línea)</div>
-            <ul class="report-list" style="padding-left:5px; margin:0;">
-                <li>• Over 8.5: {prob_c_85:.1f}%</li>
-                <li class="highlight-row">• Over 9.5: {prob_c_95:.1f}%</li>
-                <li>• Over 10.5: {prob_c_105:.1f}%</li>
+            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
+            <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
+                <li style="padding: 2px 0; font-size:13px;">• Over 8.5: {prob_c_85:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ffdf1b;">• Over 9.5: {prob_c_95:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px;">• Over 10.5: {prob_c_105:.1f}%</li>
             </ul>
         </div>
-        <div class="report-col">
-            <div class="col-title">⚽ Totales de Goles</div>
-            <ul class="report-list" style="padding-left:5px; margin:0;">
-                <li>• Over 1.5: {p_over15:.1f}%</li>
-                <li>• Under 1.5: {100-p_over15:.1f}%</li>
-                <li class="highlight-row">• Over 2.5: {p_over25:.1f}%</li>
-                <li>• Under 2.5: {100-p_over25:.1f}%</li>
-                <li>• Over 3.5: {p_over35:.1f}%</li>
+        <div style="flex: 1; background: #161616; padding: 12px; border-radius: 6px;">
+            <div style="font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">⚽ Totales de Goles</div>
+            <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
+                <li style="padding: 2px 0; font-size:13px;">• Over 1.5: {p_over15:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ffdf1b;">• Over 2.5: {p_over25:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px;">• Over 3.5: {p_over35:.1f}%</li>
             </ul>
-            <div class="col-title" style="color:#ff4d4d; margin-top:10px;">🟨 Tarjetas (Agresividad)</div>
-            <ul class="report-list" style="padding-left:5px; margin:0;">
-                <li>• Over 2.5: {prob_t_25:.1f}%</li>
-                <li class="highlight-row">• Over 3.5: {prob_t_35:.1f}%</li>
-                <li>• Over 4.5: {prob_t_45:.1f}%</li>
+            <div style="font-size: 13px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
+            <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
+                <li style="padding: 2px 0; font-size:13px;">• Over 2.5: {prob_t_25:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px; font-weight: bold; color: #ff4d4d;">• Over 3.5: {prob_t_35:.1f}%</li>
+                <li style="padding: 2px 0; font-size:13px;">• Over 4.5: {prob_t_45:.1f}%</li>
             </ul>
         </div>
     </div>
     
-    <div class="section-title">🏆 TOP MARCADORES EXACTOS PROBABLES:</div>
-    <ul class="report-list" style="font-family:monospace; font-size:15px;">
-        <li><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)</b></li>
-        <li>#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)</li>
-        <li>#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)</li>
-        <li>#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']:.1f}%)</li>
+    <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #00ffcc;">🏆 TOP MARCADORES EXACTOS PROBABLES:</div>
+    <ul style="list-style-type: none; padding-left: 15px; font-family: monospace; font-size: 14px; margin-bottom: 0;">
+        <li style="padding: 3px 0;"><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']})</b></li>
+        <li style="padding: 3px 0;">#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']})</li>
+        <li style="padding: 3px 0;">#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']})</li>
+        <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']})</li>
     </ul>
     
-    <div style="text-align:center; font-size:11px; color:#555555; margin-top:20px;">Generado por Bet365 Analytics Lab AI</div>
+    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Generado por Bet365 Analytics Lab AI</div>
 </div>
 """
 
-# Renderizar en la pantalla el clon perfecto
-st.markdown(html_reporte_premium, unsafe_allow_html=True)
+# 🟢 RENDERIZADO CORREGIDO MEDIANTE IFRAME DE COMPONENTES DE STREAMLIT
+st.components.v1.html(html_reporte_premium, height=620, scrolling=False)
 
 st.info("💡 **Tip de producción:** Para compartir este reporte instantáneamente en tus canales o grupos con calidad HD y acentos perfectos, solo toma una captura de pantalla (*Screenshot*) directamente a la tarjeta de arriba. ¡Queda impecable y lista para mandar!")
