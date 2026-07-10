@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 import io
 
 # ==============================================================================
-# 🎨 ESTITO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
+# 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
 st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
 
@@ -256,7 +256,8 @@ html_table = f"""
 st.markdown(html_table, unsafe_allow_html=True)
 
 st.write("Filtro de Enfoque Analitico Activo")
-enfoque = st.radio("", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
+# 🟢 CORRECCIÓN: Se le asigna un label con texto real para evitar el quiebre de Streamlit Cloud
+enfoque = st.radio("Selecciona Enfoque:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
 
 matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
 
@@ -323,41 +324,35 @@ with col_der:
     st.table(df_top)
 
 # ==============================================================================
-# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO Y BLINDADO (COMPATIBILIDAD PIL)
+# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Exportar Reporte de Analisis")
 
 def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas):
-    # Generar lienzo base
     img = Image.new("RGBA", (800, 600), "#0d1b15")
     draw = ImageDraw.Draw(img)
     
-    # Bordes estéticos
     draw.rectangle([15, 15, 785, 585], outline="#00ffcc", width=3)
     draw.rectangle([30, 30, 770, 110], fill="#0c3321", outline="#ffdf1b", width=1)
     
-    # 🟢 CORRECCIÓN PIL: Textos dibujados sin argumento font_size conflictivo
     draw.text((400, 50), "LA BIBLIA DEL PICK", fill="#ffffff", anchor="mm")
     draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", anchor="mm")
     
     draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", anchor="mm")
     draw.line([100, 175, 700, 175], fill="#1f3a30", width=2)
     
-    # Lado Izquierdo: 1X2
     draw.text((50, 210), f"PROBABILIDADES 1X2 ({enfoque.upper()}):", fill="#ffdf1b")
     draw.text((70, 245), f"* Gana {local}: {m_1x2[0]}", fill="#ffffff")
     draw.text((70, 275), f"* Empate (X): {m_1x2[1]}", fill="#ffffff")
     draw.text((70, 305), f"* Gana {visitante}: {m_1x2[2]}", fill="#ffffff")
     
-    # Props
     draw.text((50, 360), "MERCADOS ADICIONALES:", fill="#ffdf1b")
     draw.text((70, 395), f"* Ambos Anotan (Si): {btts:.1f}%", fill="#ffffff")
     draw.text((70, 425), f"* Total Goles (Mas de 2.5): {over25:.1f}%", fill="#ffffff")
     draw.text((70, 455), f"* Corners (Mas de 9.5): {corners:.1f}%", fill="#00ffcc")
     draw.text((70, 485), f"* Tarjetas (Mas de 3.5): {tarjetas:.1f}%", fill="#ff4d4d")
     
-    # Lado Derecho: Marcadores punteros calculados dinámicamente
     draw.text((460, 210), "TOP MARCADORES EXACTOS:", fill="#ffdf1b")
     lista_img = []
     for i in range(6):
