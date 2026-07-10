@@ -4,8 +4,6 @@ import scipy.stats as stats
 import xgboost as xgb
 import json
 import pandas as pd
-from PIL import Image, ImageDraw
-import io
 
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
@@ -111,6 +109,14 @@ st.markdown("""
     .market-value {
         color: #00ffcc;
         font-weight: bold;
+    }
+    /* REPORTE DE EXPORTACIÓN */
+    .report-card {
+        background-color: #091410;
+        border: 2px solid #ffdf1b;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: monospace;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -255,9 +261,8 @@ html_table = f"""
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-st.write("Filtro de Enfoque Analitico Activo")
-# 🟢 CORRECCIÓN: Se le asigna un label con texto real para evitar el quiebre de Streamlit Cloud
-enfoque = st.radio("Selecciona Enfoque:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
+# Selector de enfoque para matriz dinámica inferior
+enfoque = st.radio("Enfoque Analitico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
 
 matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
 
@@ -324,58 +329,42 @@ with col_der:
     st.table(df_top)
 
 # ==============================================================================
-# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO
+# 📋 REPORTE DE EXPORTACIÓN (ESTABLE PARA COMPARTIR POR TELEGRAM/TEXTO)
 # ==============================================================================
 st.markdown("---")
-st.markdown("### 📥 Exportar Reporte de Analisis")
+st.markdown("### 📥 Reporte de Analisis para Compartir")
 
-def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas):
-    img = Image.new("RGBA", (800, 600), "#0d1b15")
-    draw = ImageDraw.Draw(img)
-    
-    draw.rectangle([15, 15, 785, 585], outline="#00ffcc", width=3)
-    draw.rectangle([30, 30, 770, 110], fill="#0c3321", outline="#ffdf1b", width=1)
-    
-    draw.text((400, 50), "LA BIBLIA DEL PICK", fill="#ffffff", anchor="mm")
-    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", anchor="mm")
-    
-    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", anchor="mm")
-    draw.line([100, 175, 700, 175], fill="#1f3a30", width=2)
-    
-    draw.text((50, 210), f"PROBABILIDADES 1X2 ({enfoque.upper()}):", fill="#ffdf1b")
-    draw.text((70, 245), f"* Gana {local}: {m_1x2[0]}", fill="#ffffff")
-    draw.text((70, 275), f"* Empate (X): {m_1x2[1]}", fill="#ffffff")
-    draw.text((70, 305), f"* Gana {visitante}: {m_1x2[2]}", fill="#ffffff")
-    
-    draw.text((50, 360), "MERCADOS ADICIONALES:", fill="#ffdf1b")
-    draw.text((70, 395), f"* Ambos Anotan (Si): {btts:.1f}%", fill="#ffffff")
-    draw.text((70, 425), f"* Total Goles (Mas de 2.5): {over25:.1f}%", fill="#ffffff")
-    draw.text((70, 455), f"* Corners (Mas de 9.5): {corners:.1f}%", fill="#00ffcc")
-    draw.text((70, 485), f"* Tarjetas (Mas de 3.5): {tarjetas:.1f}%", fill="#ff4d4d")
-    
-    draw.text((460, 210), "TOP MARCADORES EXACTOS:", fill="#ffdf1b")
-    lista_img = []
-    for i in range(6):
-        for j in range(6):
-            lista_img.append({"M": f"{i} - {j}", "P": matriz_activa[i, j] * 100})
-    df_img = pd.DataFrame(lista_img).sort_values(by="P", ascending=False).head(5).reset_index(drop=True)
-    
-    for idx, row in df_img.iterrows():
-        y_pos = 245 + (idx * 32)
-        draw.text((480, y_pos), f"{idx+1}. Resultado [{row['M']}]: {row['P']:.1f}%", fill="#ffffff")
-        
-    draw.text((400, 555), "Generado de forma automatica por Bet365 Analytics Lab AI", fill="#a3b8b0", anchor="mm")
-    
-    byte_io = io.BytesIO()
-    img.save(byte_io, 'PNG')
-    return byte_io.getvalue()
+datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
 
-datos_1x2 = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
-imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35)
+# Generar string de texto estructurado libre de errores de memoria
+reporte_texto = f"""📊 LA BIBLIA DEL PICK | ANALISIS DEPORTIVO
+🏟️ MATCH: {eq_l.upper()} vs {eq_v.upper()}
+🎛️ ENFOQUE SELECCIONADO: {enfoque.upper()}
+--------------------------------------------------
+💰 PROBABILIDADES 1X2:
+• Gana {eq_l}: {datos_1x2_sel[0]}
+• Empate (X): {datos_1x2_sel[1]}
+• Gana {eq_v}: {datos_1x2_sel[2]}
+
+⚽ MERCADOS PRINCIPALES:
+• Ambos Anotan (Si): {p_btts_si:.1f}%
+• Mas de 2.5 Goles: {p_over25:.1f}%
+• Mas de 9.5 Corners: {prob_c_95:.1f}%
+• Mas de 3.5 Tarjetas: {prob_t_35:.1f}%
+
+🎯 TOP 3 MARCADORES EXACTOS:
+1. {df_top.iloc[0]['SCORE PROBABLE']} ({df_top.iloc[0]['PROBABILIDAD MKT']})
+2. {df_top.iloc[1]['SCORE PROBABLE']} ({df_top.iloc[1]['PROBABILIDAD MKT']})
+3. {df_top.iloc[2]['SCORE PROBABLE']} ({df_top.iloc[2]['PROBABILIDAD MKT']})
+--------------------------------------------------
+Generado por Bet365 Analytics Lab AI
+"""
+
+st.markdown('<div class="report-card"><pre style="color:#ffdf1b; margin:0;">' + reporte_texto + '</pre></div>', unsafe_allow_html=True)
 
 st.download_button(
-    label="📥 Descargar Analisis en Formato PNG",
-    data=imagen_binaria,
-    file_name=f"Analisis_{eq_l}_vs_{eq_v}.png",
-    mime="image/png"
+    label="📥 Descargar Reporte de Analisis (.txt)",
+    data=reporte_texto,
+    file_name=f"Analisis_{eq_l}_vs_{eq_v}.txt",
+    mime="text/plain"
 )
