@@ -8,7 +8,7 @@ import pandas as pd
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
+st.set_page_config(page_title="La Biblia Del Pick", layout="wide", page_icon="📊")
 
 st.markdown("""
     <style>
@@ -96,12 +96,11 @@ if eq_l == eq_v:
     st.stop()
 
 # ==============================================================================
-# 🧮 CÁLCULO MULTI-MODELO (MATRICES BASE)
+# 🧮 CÁLCULO MULTI-MODELO
 # ==============================================================================
 data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
 intercept, home_effect = db["intercept"], db["home_effect"]
 
-# MODELO 1: PyMC Bayes / Poisson Puro
 lambda_l_bayes = np.exp(intercept + home_effect + data_l["attack"] - data_v["defense"])
 lambda_v_bayes = np.exp(intercept - home_effect + data_v["attack"] - data_l["defense"])
 
@@ -110,7 +109,6 @@ for i in range(6):
     for j in range(6):
         matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
-# MODELO 2: XGBoost Híbrido
 matriz_pred = np.array([[home_effect, data_l["attack"], data_l["defense"], data_v["attack"], data_v["defense"]]], dtype=np.float32)
 prob_over25_xgb = modelo_xgb.predict_proba(matriz_pred)[0][1]
 
@@ -124,11 +122,9 @@ for i in range(6):
     for j in range(6):
         matrix_xgb[i, j] = stats.poisson.pmf(i, lambda_l_xgb) * stats.poisson.pmf(j, lambda_v_xgb)
 
-# MODELO 3: Ensamble Combinado
 matrix_combinado = (matrix_bayes + matrix_xgb) / 2
 lambda_l_comb, lambda_v_comb = (lambda_l_bayes + lambda_l_xgb) / 2, (lambda_v_bayes + lambda_v_xgb) / 2
 
-# Props fijas (Córners y Tarjetas)
 lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
 lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
 total_corners = lambda_corners_l + lambda_corners_v
@@ -181,10 +177,8 @@ html_table = f"""
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-# 🌟 CONTROL INTERACTIVO DE ENFOQUES ACTIVO
 enfoque = st.radio("Enfoque Analítico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
 
-# Asignación de la matriz que controlará absolutamente todo el bloque inferior
 if enfoque == "Combinado":
     matriz_activa = matrix_combinado
 elif enfoque == "XGBoost":
@@ -193,7 +187,7 @@ else:
     matriz_activa = matrix_bayes
 
 # ==============================================================================
-# 🧩 BLOQUE INFERIOR DINÁMICO (MATRIZ VS PROPUESTAS EN TIEMPO REAL)
+# 🧩 BLOQUE INFERIOR DINÁMICO
 # ==============================================================================
 col_izq, col_der = st.columns([1.3, 1])
 
@@ -227,26 +221,33 @@ with col_der:
     <div class="market-box">
         <div class="market-title">🌍 AMBOS EQUIPOS ANOTAN (BTTS)</div>
         <div class="market-row"><span>Sí (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
+        <div class="market-row"><span>No (Both Teams to Score - No)</span><span class="market-value">{p_btts_no:.1f}%</span></div>
     </div>
     <div class="market-box">
         <div class="market-title">🥅 TOTALES DE GOLES (OVER / UNDER)</div>
+        <div class="market-row"><span>Más de 1.5 (Over 1.5)</span><span class="market-value">{p_over15:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 1.5 (Under 1.5)</span><span class="market-value">{100-p_over15:.1f}%</span></div>
         <div class="market-row" style="background: rgba(255,223,27,0.1); padding: 2px 0;">
             <span style="color:#ffdf1b; font-weight:bold;">Más de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
         </div>
+        <div class="market-row"><span>Menos de 2.5 (Under 2.5)</span><span class="market-value">{100-p_over25:.1f}%</span></div>
+        <div class="market-row"><span>Más de 3.5 (Over 3.5)</span><span class="market-value">{p_over35:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 3.5 (Under 3.5)</span><span class="market-value">{100-p_over35:.1f}%</span></div>
     </div>
     <div class="market-box" style="border-left: 4px solid #00ffcc;">
         <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CÓRNERS</div>
         <div class="market-row"><span>Más de 9.5 Córners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 9.5 Córners Totales</span><span class="market-value">{100-prob_c_95:.1f}%</span></div>
     </div>
     <div class="market-box" style="border-left: 4px solid #ff4d4d;">
         <div class="market-title" style="color: #ff4d4d !important;">🟨 PUNTOS DE TARJETAS</div>
         <div class="market-row"><span>Más de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
+        <div class="market-row"><span>Menos de 3.5 Tarjetas</span><span class="market-value">{100-prob_t_35:.1f}%</span></div>
     </div>
     """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
-    # 🟢 CORRECCIÓN CENTRAL: Se extraen las probabilidades basándose de manera estricta en la 'matriz_activa' elegida por el radio button
     top_lista = []
     for i in range(6):
         for j in range(6):
@@ -260,7 +261,7 @@ with col_der:
     st.table(df_visual)
 
 # ==============================================================================
-# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (DINÁMICO CON EL ENFOQUE)
+# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (INTEGRADO CON OVER / UNDER)
 # ==============================================================================
 st.markdown("---")
 st.markdown("### 📥 Reporte de Análisis de Producción")
@@ -281,7 +282,7 @@ html_reporte_premium = f"""
     <div style="font-size: 13px; color: #ffdf1b; text-align: center; font-weight: bold; letter-spacing: 2px; margin-bottom: 25px;">⚡ Análisis Deportivo</div>
     
     <div style="font-size: 20px; font-weight: bold; text-align: center; background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 5px;">📋 {eq_l.upper()} vs {eq_v.upper()}</div>
-    <div style="font-size: 14px; color: #00ffcc; text-align: center; font-style: italic; margin-bottom: 30px;">Enfoque Activo: {enfoque}</div>
+    <div style="font-size: 14px; color: #00ffcc; text-align: center; font-style: italic; margin-bottom: 30px;">Enfoque Active: {enfoque}</div>
     
     <div style="font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; color: #00ffcc;">📊 PROBABILIDADES MERCADO 1X2:</div>
     <ul style="list-style-type: none; padding-left: 15px; margin-bottom: 20px;">
@@ -298,11 +299,10 @@ html_reporte_premium = f"""
                 <li style="padding: 2px 0; font-size:12px;">• Sí: {p_btts_si:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px;">• No: {p_btts_no:.1f}%</li>
             </ul>
-            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #00ffcc; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">📐 Córners Totales (9.5)</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:12px;">• Over 8.5: {prob_c_85:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ffdf1b;">• Over 9.5: {prob_c_95:.1f}%</li>
-                <li style="padding: 2px 0; font-size:12px;">• Over 10.5: {prob_c_105:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Under 9.5: {100-prob_c_95:.1f}%</li>
             </ul>
         </div>
         <div style="flex: 1; background: #161616; padding: 12px; border-radius: 6px;">
@@ -310,13 +310,13 @@ html_reporte_premium = f"""
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
                 <li style="padding: 2px 0; font-size:12px;">• Over 1.5: {p_over15:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ffdf1b;">• Over 2.5: {p_over25:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Under 2.5: {100-p_over25:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px;">• Over 3.5: {p_over35:.1f}%</li>
             </ul>
-            <div style="font-size: 12px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales</div>
+            <div style="font-size: 12px; font-weight: bold; color: #ff4d4d; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px;">🟨 Tarjetas Totales (3.5)</div>
             <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
-                <li style="padding: 2px 0; font-size:12px;">• Over 2.5: {prob_t_25:.1f}%</li>
                 <li style="padding: 2px 0; font-size:12px; font-weight: bold; color: #ff4d4d;">• Over 3.5: {prob_t_35:.1f}%</li>
-                <li style="padding: 2px 0; font-size:12px;">• Over 4.5: {prob_t_45:.1f}%</li>
+                <li style="padding: 2px 0; font-size:12px;">• Under 3.5: {100-prob_t_35:.1f}%</li>
             </ul>
         </div>
     </div>
@@ -329,7 +329,7 @@ html_reporte_premium = f"""
         <li style="padding: 3px 0;">#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']:.1f}%)</li>
     </ul>
     
-    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Generado por Bet365 Analytics Lab AI</div>
+    <div style="text-align: center; font-size: 11px; color: #555555; margin-top: 25px;">Tómese como probabilidades</div>
 </div>
 
 <script>
