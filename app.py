@@ -31,11 +31,33 @@ st.markdown("""
     .market-title { color: #ffdf1b !important; font-size: 13px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
     .market-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
     .market-value { color: #00ffcc; font-weight: bold; }
-    .report-card { background-color: #091410; border: 2px solid #ffdf1b; padding: 20px; border-radius: 8px; font-family: monospace; }
+    
+    /* 📱 ESTILOS ESTRUCTURALES DEL REPORTE PREMIUM (CLON DE TU IMAGEN) */
+    .report-container {
+        background-color: #111111;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        padding: 35px;
+        border-radius: 10px;
+        max-width: 650px;
+        margin: 0 auto;
+        color: #ffffff;
+        border: 1px solid #222222;
+    }
+    .report-title { font-size: 26px; font-weight: 900; text-align: center; letter-spacing: 1px; margin-bottom: 2px; }
+    .report-subtitle { font-size: 13px; color: #ffdf1b; text-align: center; font-weight: bold; letter-spacing: 2px; margin-bottom: 25px; }
+    .report-match { font-size: 22px; font-weight: bold; text-align: center; background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 5px; }
+    .report-enfoque { font-size: 14px; color: #00ffcc; text-align: center; font-style: italic; margin-bottom: 30px; }
+    .section-title { font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 25px; margin-bottom: 12px; display: flex; align-items: center; }
+    .report-list { list-style-type: none; padding-left: 15px; margin-bottom: 20px; }
+    .report-list li { font-size: 14px; padding: 4px 0; color: #dddddd; }
+    .report-grid { display: flex; justify-content: space-between; gap: 20px; }
+    .report-col { flex: 1; background: #161616; padding: 12px; border-radius: 6px; }
+    .col-title { font-size: 13px; font-weight: bold; color: #00ffcc; margin-bottom: 8px; border-bottom: 1px solid #222222; padding-bottom: 4px; }
+    .highlight-row { font-weight: bold; color: #ffdf1b !important; }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header-box"><h2>📊 LA BIBLIA DEL PICK</h2><p>⚡ ANALISIS DEPORTIVO</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-box"><h2>📊 LA BIBLIA DEL PICK</h2><p>⚡ ANÁLISIS DEPORTIVO</p></div>', unsafe_allow_html=True)
 
 # ==============================================================================
 # 💾 NÚCLEO DE DATOS E INYECCIÓN DE LOS 3 ASCENDIDOS CONFIRMADOS
@@ -77,13 +99,8 @@ def cargar_modelo_xgb():
     modelo.load_model("xgboost_goles_model.json")
     return modelo
 
-try:
-    db = cargar_y_reparar_base_datos()
-    modelo_xgb = cargar_modelo_xgb()
-except Exception as e:
-    st.error(f"Error al inicializar componentes base: {e}")
-    st.stop()
-
+db = cargar_y_reparar_base_datos()
+modelo_xgb = cargar_modelo_xgb()
 lista_equipos = sorted(list(db["teams"].keys()))
 
 col_sel1, col_sel2 = st.columns(2)
@@ -129,10 +146,14 @@ lambda_l_comb, lambda_v_comb = (lambda_l_bayes + lambda_l_xgb) / 2, (lambda_v_ba
 lambda_corners_l = (data_l["corners_att"] + data_v["corners_def"]) / 2
 lambda_corners_v = (data_v["corners_att"] + data_l["corners_def"]) / 2
 total_corners = lambda_corners_l + lambda_corners_v
+prob_c_85 = (1 - stats.poisson.cdf(8, total_corners)) * 100
 prob_c_95 = (1 - stats.poisson.cdf(9, total_corners)) * 100
+prob_c_105 = (1 - stats.poisson.cdf(10, total_corners)) * 100
 
 total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
+prob_t_25 = (1 - stats.poisson.cdf(2, total_tarjetas)) * 100
 prob_t_35 = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
+prob_t_45 = (1 - stats.poisson.cdf(4, total_tarjetas)) * 100
 
 def procesar_metricas_mercado(matrix, l_local, l_visita):
     p_local_real = np.sum([matrix[i, j] for i in range(6) for j in range(6) if i > j])
@@ -152,7 +173,7 @@ m_bayes = procesar_metricas_mercado(matrix_bayes, lambda_l_bayes, lambda_v_bayes
 html_table = f"""
 <table class="main-table">
     <tr>
-        <th>METODO DE CALCULO</th>
+        <th>MÉTODO DE CÁLCULO</th>
         <th>GANA {eq_l.upper()} (1)</th>
         <th>EMPATE (X)</th>
         <th>GANA {eq_v.upper()} (2)</th>
@@ -163,18 +184,18 @@ html_table = f"""
         <td><b>{m_comb[0]}</b></td><td><b>{m_comb[1]}</b></td><td><b>{m_comb[2]}</b></td><td>{m_comb[3]}</td>
     </tr>
     <tr>
-        <td>🌲 XGBoost Hibrido (Rachas)</td>
+        <td>🌲 XGBoost Híbrido (Rachas)</td>
         <td>{m_xgb[0]}</td><td>{m_xgb[1]}</td><td>{m_xgb[2]}</td><td>{m_xgb[3]}</td>
     </tr>
     <tr>
-        <td>🏛️ PyMC Bayes (Jerarquia)</td>
+        <td>🏛️ PyMC Bayes (Jerarquía)</td>
         <td>{m_bayes[0]}</td><td>{m_bayes[1]}</td><td>{m_bayes[2]}</td><td>{m_bayes[3]}</td>
     </tr>
 </table>
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-enfoque = st.radio("Enfoque Analitico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
+enfoque = st.radio("Enfoque Analítico Activo:", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True)
 matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
 
 # ==============================================================================
@@ -183,7 +204,7 @@ matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if e
 col_izq, col_der = st.columns([1.3, 1])
 
 with col_izq:
-    st.markdown("### 🟥 Matriz Estocastica de Marcadores (%)")
+    st.markdown("### 🟥 Matriz Estocástica de Marcadores (%)")
     grid_html = '<table class="matrix-table">'
     for i in reversed(range(6)):
         grid_html += "<tr>"
@@ -203,82 +224,114 @@ with col_izq:
 with col_der:
     st.markdown("### 📊 Probabilidades de Mercados Adicionales")
     p_btts_si = sum(matriz_activa[i, j] for i in range(1, 6) for j in range(1, 6)) * 100
+    p_btts_no = 100 - p_btts_si
+    p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
     p_over25 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 2.5) * 100
+    p_over35 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 3.5) * 100
 
     html_sidebar = f"""
     <div class="market-box">
         <div class="market-title">🌍 AMBOS EQUIPOS ANOTAN (BTTS)</div>
-        <div class="market-row"><span>Si (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
+        <div class="market-row"><span>Sí (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
     </div>
     <div class="market-box">
         <div class="market-title">🥅 TOTALES DE GOLES (OVER / UNDER)</div>
         <div class="market-row" style="background: rgba(255,223,27,0.1); padding: 2px 0;">
-            <span style="color:#ffdf1b; font-weight:bold;">Mas de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
+            <span style="color:#ffdf1b; font-weight:bold;">Más de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
         </div>
     </div>
     <div class="market-box" style="border-left: 4px solid #00ffcc;">
-        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CORNERS</div>
-        <div class="market-row"><span>Mas de 9.5 Corners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
+        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CÓRNERS</div>
+        <div class="market-row"><span>Más de 9.5 Córners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
     </div>
     <div class="market-box" style="border-left: 4px solid #ff4d4d;">
         <div class="market-title" style="color: #ff4d4d !important;">🟨 PUNTOS DE TARJETAS</div>
-        <div class="market-row"><span>Mas de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
+        <div class="market-row"><span>Más de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
     </div>
     """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
-    # 🟢 CORRECCIÓN DE VARIABLE MÁSTER AQUÍ:
     top_lista = []
     for i in range(6):
         for j in range(6):
             top_lista.append({"SCORE PROBABLE": f"{eq_l} {i} - {j} {eq_v}", "PROBABILIDAD MKT": matriz_activa[i, j] * 100})
-            
     df_top = pd.DataFrame(top_lista).sort_values(by="PROBABILIDAD MKT", ascending=False).head(10).reset_index(drop=True)
     df_top.index += 1
-    
-    # Clonamos para visualización limpia en pantalla sin alterar la data del reporte
     df_visual = df_top.copy()
     df_visual["PROBABILIDAD MKT"] = df_visual["PROBABILIDAD MKT"].map("{:.1f}%".format)
-    
     st.table(df_visual)
 
 # ==============================================================================
-# 📋 REPORTE DE EXPORTACIÓN DIRECTO (TELEGRAM READY)
+# 📋 GENERACIÓN DEL REPORTE CLON EN ALTA DEFINICIÓN (HTML/CSS WORKSTATION)
 # ==============================================================================
 st.markdown("---")
-st.markdown("### 📥 Reporte de Analisis para Compartir")
+st.markdown("### 📥 Reporte de Análisis de Producción")
 
 datos_1x2_sel = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
 
-reporte_texto = f"""📊 LA BIBLIA DEL PICK | ANALISIS DEPORTIVO
-🏟️ MATCH: {eq_l.upper()} vs {eq_v.upper()}
-🎛️ ENFOQUE SELECCIONADO: {enfoque.upper()}
---------------------------------------------------
-💰 PROBABILIDADES 1X2:
-• Gana {eq_l}: {datos_1x2_sel[0]}
-• Empate (X): {datos_1x2_sel[1]}
-• Gana {eq_v}: {datos_1x2_sel[2]}
-
-⚽ MERCADOS PRINCIPALES:
-• Ambos Anotan (Si): {p_btts_si:.1f}%
-• Mas de 2.5 Goles: {p_over25:.1f}%
-• Mas de 9.5 Corners: {prob_c_95:.1f}%
-• Mas de 3.5 Tarjetas: {prob_t_35:.1f}%
-
-🎯 TOP 3 MARCADORES EXACTOS:
-1. {df_top.iloc[0]['SCORE PROBABLE']} ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)
-2. {df_top.iloc[1]['SCORE PROBABLE']} ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)
-3. {df_top.iloc[2]['SCORE PROBABLE']} ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)
---------------------------------------------------
-Generado por Bet365 Analytics Lab AI
+# Maquetación exacta basada en la imagen adjunta del usuario
+html_reporte_premium = f"""
+<div class="report-container">
+    <div class="report-title">LA BIBLIA DEL PICK</div>
+    <div class="report-subtitle">⚡ Análisis Deportivo</div>
+    
+    <div class="report-match">📋 {eq_l.upper()} vs {eq_v.upper()}</div>
+    <div class="report-enfoque">Enfoque Activo: {enfoque}</div>
+    
+    <div class="section-title">🌐 PROBABILIDADES MERCADO 1X2:</div>
+    <ul class="report-list">
+        <li>• Gana {eq_l}: <b>{datos_1x2_sel[0]}</b></li>
+        <li>• Empate (X): <b>{datos_1x2_sel[1]}</b></li>
+        <li>• Gana {eq_v}: <b>{datos_1x2_sel[2]}</b></li>
+    </ul>
+    
+    <div class="section-title">📊 LÍNEAS DE GOLES Y MERCADOS COMPLEMENTARIOS:</div>
+    <div class="report-grid">
+        <div class="report-col">
+            <div class="col-title">🥅 Ambos Anotan (BTTS)</div>
+            <ul class="report-list" style="padding-left:5px; margin:0;">
+                <li>• Sí: {p_btts_si:.1f}%</li>
+                <li>• No: {p_btts_no:.1f}%</li>
+            </ul>
+            <div class="col-title" style="color:#00ffcc; margin-top:10px;">📐 Córners (Línea)</div>
+            <ul class="report-list" style="padding-left:5px; margin:0;">
+                <li>• Over 8.5: {prob_c_85:.1f}%</li>
+                <li class="highlight-row">• Over 9.5: {prob_c_95:.1f}%</li>
+                <li>• Over 10.5: {prob_c_105:.1f}%</li>
+            </ul>
+        </div>
+        <div class="report-col">
+            <div class="col-title">⚽ Totales de Goles</div>
+            <ul class="report-list" style="padding-left:5px; margin:0;">
+                <li>• Over 1.5: {p_over15:.1f}%</li>
+                <li>• Under 1.5: {100-p_over15:.1f}%</li>
+                <li class="highlight-row">• Over 2.5: {p_over25:.1f}%</li>
+                <li>• Under 2.5: {100-p_over25:.1f}%</li>
+                <li>• Over 3.5: {p_over35:.1f}%</li>
+            </ul>
+            <div class="col-title" style="color:#ff4d4d; margin-top:10px;">🟨 Tarjetas (Agresividad)</div>
+            <ul class="report-list" style="padding-left:5px; margin:0;">
+                <li>• Over 2.5: {prob_t_25:.1f}%</li>
+                <li class="highlight-row">• Over 3.5: {prob_t_35:.1f}%</li>
+                <li>• Over 4.5: {prob_t_45:.1f}%</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="section-title">🏆 TOP MARCADORES EXACTOS PROBABLES:</div>
+    <ul class="report-list" style="font-family:monospace; font-size:15px;">
+        <li><b>#1. {df_top.iloc[0]['SCORE PROBABLE']} -> ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)</b></li>
+        <li>#2. {df_top.iloc[1]['SCORE PROBABLE']} -> ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li>#3. {df_top.iloc[2]['SCORE PROBABLE']} -> ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)</li>
+        <li>#4. {df_top.iloc[3]['SCORE PROBABLE']} -> ({df_top.iloc[3]['PROBABILIDAD MKT']:.1f}%)</li>
+    </ul>
+    
+    <div style="text-align:center; font-size:11px; color:#555555; margin-top:20px;">Generado por Bet365 Analytics Lab AI</div>
+</div>
 """
 
-st.markdown('<div class="report-card"><pre style="color:#ffdf1b; margin:0;">' + reporte_texto + '</pre></div>', unsafe_allow_html=True)
+# Renderizar en la pantalla el clon perfecto
+st.markdown(html_reporte_premium, unsafe_allow_html=True)
 
-st.download_button(
-    label="📥 Descargar Reporte de Analisis (.txt)",
-    data=reporte_texto,
-    file_name=f"Analisis_{eq_l}_vs_{eq_v}.txt",
-    mime="text/plain"
-)
+st.info("💡 **Tip de producción:** Para compartir este reporte instantáneamente en tus canales o grupos con calidad HD y acentos perfectos, solo toma una captura de pantalla (*Screenshot*) directamente a la tarjeta de arriba. ¡Queda impecable y lista para mandar!")
