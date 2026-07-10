@@ -4,13 +4,13 @@ import scipy.stats as stats
 import xgboost as xgb
 import json
 import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import io
 
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
 # ==============================================================================
-st.set_page_config(page_title="Tablero Máster de Probabilidades", layout="wide", page_icon="📊")
+st.set_page_config(page_title="Tablero Master de Probabilidades", layout="wide", page_icon="📊")
 
 st.markdown("""
     <style>
@@ -115,11 +115,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 🏟️ INYECCIÓN DEL ENCABEZADO IDÉNTICO A LA IMAGEN ADJUNTA
+# 🏟️ ENCABEZADO
 st.markdown("""
     <div class="header-box">
         <h2>📊 LA BIBLIA DEL PICK</h2>
-        <p>⚡ ANÁLISIS DEPORTIVO</p>
+        <p>⚡ ANALISIS DEPORTIVO</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -171,14 +171,14 @@ col_sel1, col_sel2 = st.columns(2)
 with col_sel1:
     eq_l = st.selectbox("🏟️ EQUIPO LOCAL:", lista_equipos, index=lista_equipos.index("Arsenal") if "Arsenal" in lista_equipos else 0)
 with col_sel2:
-    eq_v = st.selectbox("✈️ EQUIPO VISITANTE:", lista_equipos, index=lista_equipos.index("Man City") if "Man City" in lista_equipos else 1)
+    eq_v = st.selectbox("✈️ EQUIPO VISITANTE:", lista_equipos, index=lista_equipos.index("Coventry City") if "Coventry City" in lista_equipos else 1)
 
 if eq_l == eq_v:
     st.warning("Selecciona dos rivales diferentes.")
     st.stop()
 
 # ==============================================================================
-# 🧮 CÁLCULO MULTI-MODELO
+# 🧮 CÁLCULO MULTI-MODELO (CORRECCIÓN DE LÓGICA MATRICIAL LOCAL/VISITA)
 # ==============================================================================
 data_l, data_v = db["teams"][eq_l], db["teams"][eq_v]
 intercept, home_effect = db["intercept"], db["home_effect"]
@@ -215,11 +215,17 @@ prob_c_95 = (1 - stats.poisson.cdf(9, total_corners)) * 100
 total_tarjetas = data_l["cards_recv"] + data_v["cards_recv"]
 prob_t_35 = (1 - stats.poisson.cdf(3, total_tarjetas)) * 100
 
+# 🌟 CORRECCIÓN CRÍTICA DE EJES: i representa goles del LOCAL (filas), j representa goles del VISITANTE (columnas)
 def procesar_metricas_mercado(matrix, l_local, l_visita):
-    p_l = np.sum(np.triu(matrix, 1).T)
-    p_e = np.sum(np.diag(matrix))
-    p_v = np.sum(np.tril(matrix, -1).T)
-    return f"{p_l*100:.1f}%", f"{p_e*100:.1f}%", f"{p_v*100:.1f}%", f"{l_local:.2f} vs {l_visita:.2f}"
+    p_l = np.sum(np.triu(matrix, 1)) # i > j (Victoria Local) -> Suma la parte superior sin la diagonal al trasponer correctamente
+    p_e = np.sum(np.diag(matrix))     # i == j (Empate)
+    p_v = np.sum(np.tril(matrix, -1)) # i < j (Victoria Visitante)
+    
+    # Inversión corregida para alineación real con la matriz visual
+    p_local_real = np.sum([matrix[i, j] for i in range(6) for j in range(6) if i > j])
+    p_visit_real = np.sum([matrix[i, j] for i in range(6) for j in range(6) if j > i])
+    
+    return f"{p_local_real*100:.1f}%", f"{p_e*100:.1f}%", f"{p_visit_real*100:.1f}%", f"{l_local:.2f} vs {l_visita:.2f}"
 
 # ==============================================================================
 # 📊 RENDERING DE LA TABLA MÁSTER (1X2)
@@ -233,7 +239,7 @@ m_bayes = procesar_metricas_mercado(matrix_bayes, lambda_l_bayes, lambda_v_bayes
 html_table = f"""
 <table class="main-table">
     <tr>
-        <th>MÉTODO DE CÁLCULO</th>
+        <th>METODO DE CALCULO</th>
         <th>GANA {eq_l.upper()} (1)</th>
         <th>EMPATE (X)</th>
         <th>GANA {eq_v.upper()} (2)</th>
@@ -244,18 +250,18 @@ html_table = f"""
         <td><b>{m_comb[0]}</b></td><td><b>{m_comb[1]}</b></td><td><b>{m_comb[2]}</b></td><td>{m_comb[3]}</td>
     </tr>
     <tr>
-        <td>🌲 XGBoost Híbrido (Rachas)</td>
+        <td>🌲 XGBoost Hibrido (Rachas)</td>
         <td>{m_xgb[0]}</td><td>{m_xgb[1]}</td><td>{m_xgb[2]}</td><td>{m_xgb[3]}</td>
     </tr>
     <tr>
-        <td>🏛️ PyMC Bayes (Jerarquía)</td>
+        <td>🏛️ PyMC Bayes (Jerarquia)</td>
         <td>{m_bayes[0]}</td><td>{m_bayes[1]}</td><td>{m_bayes[2]}</td><td>{m_bayes[3]}</td>
     </tr>
 </table>
 """
 st.markdown(html_table, unsafe_allow_html=True)
 
-st.write("Filtro de Enfoque Analítico Activo")
+st.write("Filtro de Enfoque Analitico Activo")
 enfoque = st.radio("", ["Combinado", "XGBoost", "PyMC Bayes"], horizontal=True, label_visibility="collapsed")
 
 matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if enfoque == "XGBoost" else matrix_bayes)
@@ -266,7 +272,7 @@ matriz_activa = matrix_combinado if enfoque == "Combinado" else (matrix_xgb if e
 col_izq, col_der = st.columns([1.3, 1])
 
 with col_izq:
-    st.markdown("### 🟥 Matriz Estocástica de Marcadores (%)")
+    st.markdown("### 🟥 Matriz Estocastica de Marcadores (%)")
     grid_html = '<table class="matrix-table">'
     for i in reversed(range(6)):
         grid_html += "<tr>"
@@ -277,6 +283,7 @@ with col_izq:
             color = "#000000" if val > 8.0 else "#ffffff"
             grid_html += f'<td class="matrix-cell" style="background-color: {bg}; color: {color};">{val:.1f}%</td>'
         grid_html += "</tr>"
+        
     grid_html += "<tr><td></td>"
     for j in range(6):
         grid_html += f'<td class="matrix-header">{eq_v[:3].upper()} {j}</td>'
@@ -286,100 +293,102 @@ with col_izq:
 with col_der:
     st.markdown("### 📊 Probabilidades de Mercados Adicionales")
     p_btts_si = sum(matriz_activa[i, j] for i in range(1, 6) for j in range(1, 6)) * 100
-    p_btts_no = 100 - p_btts_si
-    p_over15 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 1.5) * 100
     p_over25 = sum(matriz_activa[i, j] for i in range(6) for j in range(6) if i+j > 2.5) * 100
-    
-    prob_c_85 = (1 - stats.poisson.cdf(8, total_corners)) * 100
-    prob_c_105 = (1 - stats.poisson.cdf(10, total_corners)) * 100
-    prob_t_25 = (1 - stats.poisson.cdf(2, total_tarjetas)) * 100
-    prob_t_45 = (1 - stats.poisson.cdf(4, total_tarjetas)) * 100
 
     html_sidebar = f"""
     <div class="market-box">
         <div class="market-title">🌍 AMBOS EQUIPOS ANOTAN (BTTS)</div>
-        <div class="market-row"><span>Sí (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
+        <div class="market-row"><span>Si (Both Teams to Score - Yes)</span><span class="market-value">{p_btts_si:.1f}%</span></div>
     </div>
     <div class="market-box">
         <div class="market-title">🥅 TOTALES DE GOLES (OVER / UNDER)</div>
         <div class="market-row" style="background: rgba(255,223,27,0.1); padding: 2px 0;">
-            <span style="color:#ffdf1b; font-weight:bold;">Más de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
+            <span style="color:#ffdf1b; font-weight:bold;">Mas de 2.5 (Over 2.5)</span><span style="color:#ffdf1b; font-weight:bold;">{p_over25:.1f}%</span>
         </div>
     </div>
     <div class="market-box" style="border-left: 4px solid #00ffcc;">
-        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CÓRNERS</div>
-        <div class="market-row"><span>Más de 9.5 Córners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
+        <div class="market-title" style="color: #00ffcc !important;">📐 MERCADO DE CORNERS</div>
+        <div class="market-row"><span>Mas de 9.5 Corners Totales</span><span class="market-value">{prob_c_95:.1f}%</span></div>
     </div>
     <div class="market-box" style="border-left: 4px solid #ff4d4d;">
         <div class="market-title" style="color: #ff4d4d !important;">🟨 PUNTOS DE TARJETAS</div>
-        <div class="market-row"><span>Más de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
+        <div class="market-row"><span>Mas de 3.5 Tarjetas</span><span class="market-value">{prob_t_35:.1f}%</span></div>
     </div>
     """
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
+    # 🌟 CORRECCIÓN: RENDERIZADO VISUAL EXPLICITO DE LA TABLA TOP 10 DE MARCADORES EXÁCTOS
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
     top_lista = []
     for i in range(6):
         for j in range(6):
-            top_lista.append({"Score": f"{eq_l} vs {eq_v}", "Marcador": f"{i} - {j}", "P": matriz_activa[i, j] * 100})
-    df_top = pd.DataFrame(top_lista).sort_values(by="P", ascending=False).head(10).reset_index(drop=True)
+            top_lista.append({"SCORE PROBABLE": f"{eq_l} {i} - {j} {eq_v}", "PROBABILIDAD MKT": matriz_activa[i, j] * 100})
+    df_top = pd.DataFrame(top_lista).sort_values(by="PROBABILIDAD MKT", ascending=False).head(10).reset_index(drop=True)
+    df_top.index += 1
+    df_top["PROBABILIDAD MKT"] = df_top["PROBABILIDAD MKT"].map("{:.1f}%".format)
+    
+    st.table(df_top) # 🟢 Agregado el renderizador faltante
 
 # ==============================================================================
-# 📸 MOTOR DE GENERACIÓN GRÁFICA (PNG GENERATOR PARA COMPARTIR)
+# 📸 MOTOR DE GENERACIÓN GRÁFICA CORREGIDO (SIN ACENTOS Y DISEÑO PREMIUM)
 # ==============================================================================
 st.markdown("---")
-st.markdown("### 📥 Exportar Reporte de Análisis")
+st.markdown("### 📥 Exportar Reporte de Analisis")
 
 def generar_tarjeta_png(local, visitante, m_1x2, btts, over25, corners, tarjetas, top_scores):
-    # Crear canvas en alta definición (Formato Redes Sociales / Telegram)
-    img = Image.new("RGBA", (800, 700), "#0d1b15")
+    img = Image.new("RGBA", (800, 600), "#0d1b15")
     draw = ImageDraw.Draw(img)
     
-    # Dibujar marcos estilo Bet365
-    draw.rectangle([15, 15, 785, 685], outline="#00ffcc", width=3)
+    # Contorno e Interfaz Estilo Bet365
+    draw.rectangle([15, 15, 785, 585], outline="#00ffcc", width=3)
     draw.rectangle([30, 30, 770, 110], fill="#0c3321", outline="#ffdf1b", width=1)
     
-    # Textos de encabezado estáticos
-    draw.text((400, 45), "LA BIBLIA DEL PICK", fill="#ffffff", font_size=32, anchor="mm")
-    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", font_size=14, anchor="mm")
+    # Textos limpiados de acentos para evitar fallos de renderizado
+    draw.text((400, 50), "LA BIBLIA DEL PICK", fill="#ffffff", font_size=28, anchor="mm")
+    draw.text((400, 85), "ANALISIS DEPORTIVO PREMIER LEAGUE", fill="#ffdf1b", font_size=12, anchor="mm")
     
-    # Partido actual
-    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", font_size=28, anchor="mm")
-    draw.line([200, 175, 600, 175], fill="#1f3a30", width=2)
+    # Datos de los rivales
+    draw.text((400, 150), f"{local.upper()} vs {visitante.upper()}", fill="#ffffff", font_size=26, anchor="mm")
+    draw.line([100, 175, 700, 175], fill="#1f3a30", width=2)
     
-    # Sección 1: Cuotas 1X2
-    draw.text((50, 210), f"Probabilidades 1X2 (Enfoque {enfoque}):", fill="#ffdf1b", font_size=16)
-    draw.text((70, 245), f"• Gana {local}: {m_1x2[0]}", fill="#ffffff", font_size=15)
-    draw.text((70, 275), f"• Empate (X): {m_1x2[1]}", fill="#ffffff", font_size=15)
-    draw.text((70, 305), f"• Gana {visitante}: {m_1x2[2]}", fill="#ffffff", font_size=15)
+    # Distribuir datos en columnas balanceadas limpias
+    # Columna 1 (Izquierda) - Mercados 1X2
+    draw.text((50, 210), f"PROBABILIDADES 1X2 ({enfoque.upper()}):", fill="#ffdf1b", font_size=15)
+    draw.text((70, 245), f"* Gana {local}: {m_1x2[0]}", fill="#ffffff", font_size=14)
+    draw.text((70, 275), f"* Empate (X): {m_1x2[1]}", fill="#ffffff", font_size=14)
+    draw.text((70, 305), f"* Gana {visitante}: {m_1x2[2]}", fill="#ffffff", font_size=14)
     
-    # Sección 2: Mercados Adicionales
-    draw.text((50, 360), "Mercados Principales Proyectados:", fill="#ffdf1b", font_size=16)
-    draw.text((70, 395), f"• Ambos Equipos Anotan (Sí): {btts:.1f}%", fill="#ffffff", font_size=15)
-    draw.text((70, 425), f"• Goles - Más de 2.5 (Over): {over25:.1f}%", fill="#ffffff", font_size=15)
-    draw.text((70, 455), f"• Córners - Más de 9.5 Totales: {corners:.1f}%", fill="#00ffcc", font_size=15)
-    draw.text((70, 485), f"• Tarjetas - Más de 3.5 Totales: {tarjetas:.1f}%", fill="#ff4d4d", font_size=15)
+    # Columna 1 - Props Inferiores
+    draw.text((50, 360), "MERCADOS ADICIONALES:", fill="#ffdf1b", font_size=15)
+    draw.text((70, 395), f"* Ambos Anotan (Si): {btts:.1f}%", fill="#ffffff", font_size=14)
+    draw.text((70, 425), f"* Total Goles (Mas de 2.5): {over25:.1f}%", fill="#ffffff", font_size=14)
+    draw.text((70, 455), f"* Corners (Mas de 9.5): {corners:.1f}%", fill="#00ffcc", font_size=14)
+    draw.text((70, 485), f"* Tarjetas (Mas de 3.5): {tarjetas:.1f}%", fill="#ff4d4d", font_size=14)
     
-    # Sección 3: Top 3 Scores Exactos (Derecha)
-    draw.text((460, 210), "Top Marcadores Exactos:", fill="#ffdf1b", font_size=16)
-    for idx, row in top_scores.head(5).iterrows():
-        y_pos = 245 + (idx * 35)
-        draw.text((480, y_pos), f"{idx+1}. Marcador [{row['Marcador']}]: {row['P']:.1f}%", fill="#ffffff", font_size=15)
+    # Columna 2 (Derecha) - Marcadores mas probables
+    draw.text((460, 210), "TOP MARCADORES EXACTOS:", fill="#ffdf1b", font_size=15)
+    # Re-extraer para la imagen los 5 punteros
+    lista_img = []
+    for i in range(6):
+        for j in range(6):
+            lista_img.append({"M": f"{i} - {j}", "P": matriz_activa[i, j] * 100})
+    df_img = pd.DataFrame(lista_img).sort_values(by="P", ascending=False).head(5).reset_index(drop=True)
+    
+    for idx, row in df_img.iterrows():
+        y_pos = 245 + (idx * 32)
+        draw.text((480, y_pos), f"{idx+1}. Resultado [{row['M']}]: {row['P']:.1f}%", fill="#ffffff", font_size=14)
         
-    # Pie de página de marca de agua
-    draw.text((400, 650), "Generado por Bet365 Analytics Lab AI", fill="#a3b8b0", font_size=12, anchor="mm")
+    draw.text((400, 555), "Generado de forma automatica por Bet365 Analytics Lab AI", fill="#a3b8b0", font_size=11, anchor="mm")
     
-    # Convertir a bytes para descarga
     byte_io = io.BytesIO()
     img.save(byte_io, 'PNG')
     return byte_io.getvalue()
 
-# Activar el buffer de descarga
 datos_1x2 = m_comb if enfoque == "Combinado" else (m_xgb if enfoque == "XGBoost" else m_bayes)
-imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35, df_top)
+imagen_binaria = generar_tarjeta_png(eq_l, eq_v, datos_1x2, p_btts_si, p_over25, prob_c_95, prob_t_35, matrix_activa)
 
 st.download_button(
-    label="📥 Descargar Análisis en Formato PNG",
+    label="📥 Descargar Analisis en Formato PNG",
     data=imagen_binaria,
     file_name=f"Analisis_{eq_l}_vs_{eq_v}.png",
     mime="image/png"
