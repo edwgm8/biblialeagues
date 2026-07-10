@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats as stats
 import xgboost as xgb
 import json
+import pandas as pd
 
 # ==============================================================================
 # 🎨 ESTILO DE PRODUCCIÓN PREMIUM (BET365 / TRADING WORKSTATION)
@@ -109,7 +110,6 @@ for i in range(6):
     for j in range(6):
         matrix_bayes[i, j] = stats.poisson.pmf(i, lambda_l_bayes) * stats.poisson.pmf(j, lambda_v_bayes)
 
-# Inferencia XGBoost optimizada sin DataFrame complejo
 matriz_pred = np.array([[home_effect, data_l["attack"], data_l["defense"], data_v["attack"], data_v["defense"]]], dtype=np.float32)
 prob_over25_xgb = modelo_xgb.predict_proba(matriz_pred)[0][1]
 
@@ -228,15 +228,20 @@ with col_der:
     st.markdown(html_sidebar, unsafe_allow_html=True)
     
     st.markdown("#### 🎯 Top 10 Proyecciones de Score Exacto")
+    # 🟢 CORRECCIÓN DE VARIABLE MÁSTER AQUÍ:
     top_lista = []
     for i in range(6):
         for j in range(6):
             top_lista.append({"SCORE PROBABLE": f"{eq_l} {i} - {j} {eq_v}", "PROBABILIDAD MKT": matriz_activa[i, j] * 100})
+            
     df_top = pd.DataFrame(top_lista).sort_values(by="PROBABILIDAD MKT", ascending=False).head(10).reset_index(drop=True)
     df_top.index += 1
-    df_top["PROBABILIDAD MKT"] = df_top["PROBABILIDAD MKT"].map("{:.1f}%".format)
     
-    st.table(df_top)
+    # Clonamos para visualización limpia en pantalla sin alterar la data del reporte
+    df_visual = df_top.copy()
+    df_visual["PROBABILIDAD MKT"] = df_visual["PROBABILIDAD MKT"].map("{:.1f}%".format)
+    
+    st.table(df_visual)
 
 # ==============================================================================
 # 📋 REPORTE DE EXPORTACIÓN DIRECTO (TELEGRAM READY)
@@ -262,9 +267,9 @@ reporte_texto = f"""📊 LA BIBLIA DEL PICK | ANALISIS DEPORTIVO
 • Mas de 3.5 Tarjetas: {prob_t_35:.1f}%
 
 🎯 TOP 3 MARCADORES EXACTOS:
-1. {df_top.iloc[0]['SCORE PROBABLE']} ({df_top.iloc[0]['PROBABILIDAD MKT']})
-2. {df_top.iloc[1]['SCORE PROBABLE']} ({df_top.iloc[1]['PROBABILIDAD MKT']})
-3. {df_top.iloc[2]['SCORE PROBABLE']} ({df_top.iloc[2]['PROBABILIDAD MKT']})
+1. {df_top.iloc[0]['SCORE PROBABLE']} ({df_top.iloc[0]['PROBABILIDAD MKT']:.1f}%)
+2. {df_top.iloc[1]['SCORE PROBABLE']} ({df_top.iloc[1]['PROBABILIDAD MKT']:.1f}%)
+3. {df_top.iloc[2]['SCORE PROBABLE']} ({df_top.iloc[2]['PROBABILIDAD MKT']:.1f}%)
 --------------------------------------------------
 Generado por Bet365 Analytics Lab AI
 """
