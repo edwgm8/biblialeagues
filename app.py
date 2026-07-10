@@ -91,19 +91,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 💾 NÚCLEO DE DATOS E INYECCIÓN DE CLUBES NUEVOS (TEMPORADA 26/27)
+# 💾 NÚCLEO DE DATOS E INYECCIÓN DE LOS 3 ASCENDIDOS CONFIRMADOS
 # ==============================================================================
 @st.cache_data
 def cargar_y_reparar_base_datos():
     with open("bayes_data_6years.json", "r") as f:
         data = json.load(f)
     
-    # 🚨 ACTUALIZACIÓN DE MAPA PARA LA TEMPORADA 26/27
-    # Incluye los clubes estables más los nuevos ascendidos (Leeds, Burnley, Luton)
+    # 🚨 MAPA OFICIAL CORREGIDO CON TUS TRES ASCENDIDOS
     equipos_actuales_2026 = [
         "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton", 
-        "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham", 
-        "Leeds", "Leicester", "Liverpool", "Luton", "Man City", 
+        "Chelsea", "Coventry City", "Crystal Palace", "Everton", "Fulham", 
+        "Hull City", "Ipswich Town", "Leicester", "Liverpool", "Man City", 
         "Man United", "Newcastle", "Nottingham", "Tottenham", "West Ham", "Wolves"
     ]
     
